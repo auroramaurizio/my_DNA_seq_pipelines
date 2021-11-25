@@ -9,7 +9,7 @@ import numpy as np
 
 #import multiqc
 
-DATADIR_SHORT="/beegfs/scratch/ric.cosr/ric.cosr/Menarini/210724_A00626_0314_BH3CYVDMXY_mutect2"
+DATADIR_SHORT="/../"
 
 
 #DATADIR_SHORT
@@ -18,7 +18,7 @@ DATADIR_SHORT="/beegfs/scratch/ric.cosr/ric.cosr/Menarini/210724_A00626_0314_BH3
 
 SAMPLE_LIST_DIR = os.listdir(DATADIR_SHORT)
 
-SUFF = set(["BLAD180620","BLAD250620","BLAD030820","BLAD040820","BLAD220720","BLAD280720"])
+SUFF = set(["1","2","3","4","5","6","7"])
 
 SUFFIX = ' '.join(map(str, SUFF))
 
@@ -52,8 +52,8 @@ rule all:
 rule recalibC:
     input:
         bam = DATADIR_SHORT+"/sorted/{pref}_C_markdup_only_marked.bam",
-        ref_fasta = "/beegfs/datasets/buffer/ric.cosr/GRCh38_Verily_AM/GRCh38_Verily/bwa-0.7.12/GRCh38_Verily_v1.genome.fa",
-        known_sites = "/beegfs/datasets/genomes/hg38/GATK_bundle/Homo_sapiens_assembly38.known_indels.vcf.gz"
+        ref_fasta = "GRCh38_Verily/bwa-0.7.12/GRCh38_Verily_v1.genome.fa",
+        known_sites = "Homo_sapiens_assembly38.known_indels.vcf.gz"
     output:
         recal = "recalib/{pref}_C_recal_cpu.txt"
     resources: time_min=5000, mem_mb=48000, cpus=18
@@ -68,8 +68,8 @@ rule recalibC:
 rule recalibT:
     input:
         bam = DATADIR_SHORT+"/sorted_T/{pref}_T_markdup_only_marked.bam",
-        ref_fasta = "/beegfs/datasets/buffer/ric.cosr/GRCh38_Verily_AM/GRCh38_Verily/bwa-0.7.12/GRCh38_Verily_v1.genome.fa",
-        known_sites = "/beegfs/datasets/genomes/hg38/GATK_bundle/Homo_sapiens_assembly38.known_indels.vcf.gz"
+        ref_fasta = "GRCh38_Verily/bwa-0.7.12/GRCh38_Verily_v1.genome.fa",
+        known_sites = "Homo_sapiens_assembly38.known_indels.vcf.gz"
     output:
         recal = "recalib_T/{pref}_T_recal_cpu.txt"
     resources: time_min=5000, mem_mb=48000, cpus=18
@@ -84,7 +84,7 @@ rule recalibT:
 rule applyBQSRC:
     input:
         bam = DATADIR_SHORT+"/sorted/{pref}_C_markdup_only_marked.bam",
-        ref_fasta = "/beegfs/datasets/buffer/ric.cosr/GRCh38_Verily_AM/GRCh38_Verily/bwa-0.7.12/GRCh38_Verily_v1.genome.fa",
+        ref_fasta = "GRCh38_Verily/bwa-0.7.12/GRCh38_Verily_v1.genome.fa",
         recal = "recalib/{pref}_C_recal_cpu.txt"
     output:
         bam = "BQSR/{pref}_C_recal.bam"
@@ -98,7 +98,7 @@ rule applyBQSRC:
 rule applyBQSRT:
     input:
         bam = DATADIR_SHORT+"/sorted_T/{pref}_T_markdup_only_marked.bam",
-        ref_fasta = "/beegfs/datasets/buffer/ric.cosr/GRCh38_Verily_AM/GRCh38_Verily/bwa-0.7.12/GRCh38_Verily_v1.genome.fa",
+        ref_fasta = "GRCh38_Verily_AM/GRCh38_Verily/bwa-0.7.12/GRCh38_Verily_v1.genome.fa",
         recal = "recalib_T/{pref}_T_recal_cpu.txt"
     output:
         bam = "BQSR_T/{pref}_T_recal.bam"
@@ -119,7 +119,7 @@ rule applyBQSRT:
 rule GatkMutect2:
     input:
         bam = "BQSR/{pref}_C_recal.bam",
-        ref_fasta = "/beegfs/datasets/buffer/ric.cosr/GRCh38_Verily_AM/GRCh38_Verily/bwa-0.7.12/GRCh38_Verily_v1.genome.fa",
+        ref_fasta = "GRCh38_Verily/bwa-0.7.12/GRCh38_Verily_v1.genome.fa",
     output:
         vcf = "BQSR/{pref}_C_recal.vcf"
     resources: time_min=5000, mem_mb=48000, cpus=18
@@ -134,16 +134,16 @@ rule GatkMutect2:
 
 #rule genomics_db_import:
 #    input:
-#        A = ["BQSR/BLAD180620_C_recal.vcf"],
-#        B = ["BQSR/BLAD030820_C_recal.vcf"],
-#        C = ["BQSR/BLAD150720_C_recal.vcf"],
-#        D = ["BQSR/BLAD250620_C_recal.vcf"],
-#        E = ["BQSR/BLAD040820_C_recal.vcf"],
-#        F = ["BQSR/BLAD220720_C_recal.vcf"],
-#        G = ["BQSR/BLAD280720_C_recal.vcf"],
-#        ref_fasta = "/beegfs/datasets/buffer/ric.cosr/GRCh38_Verily_AM/GRCh38_Verily/bwa-0.7.12/GRCh38_Verily_v1.genome.fa"
+#        A = ["BQSR/1.vcf"],
+#        B = ["BQSR/2.vcf"],
+#        C = ["BQSR/3.vcf"],
+#        D = ["BQSR/4.vcf"],
+#        E = ["BQSR/5.vcf"],
+#        F = ["BQSR/6.vcf"],
+#        G = ["BQSR/7.vcf"],
+#        ref_fasta = "GRCh38_Verily/bwa-0.7.12/GRCh38_Verily_v1.genome.fa"
 #    params:
-#        baits = "/beegfs/scratch/ric.cosr/ric.cosr/Menarini/210724_A00626_0314_BH3CYVDMXY/Twist_Exome_Target_hg38.bed"
+#        baits = "Twist_Exome_Target_hg38.bed"
 #    output:
 #        db = directory("pon_dbs")
 #    resources: time_min=50000, mem_mb=128000, cpus=32
@@ -158,9 +158,9 @@ rule GatkMutect2:
 rule genomics_db_import:
     input:
         samplenamemap = "cohort.sample_map",
-        ref_fasta = "/beegfs/datasets/buffer/ric.cosr/GRCh38_Verily_AM/GRCh38_Verily/bwa-0.7.12/GRCh38_Verily_v1.genome.fa"
+        ref_fasta = "GRCh38_Verily/bwa-0.7.12/GRCh38_Verily_v1.genome.fa"
     params:
-        baits = "/beegfs/scratch/ric.cosr/ric.cosr/Menarini/210724_A00626_0314_BH3CYVDMXY/Twist_Exome_Target_hg38.bed",
+        baits = "Twist_Exome_Target_hg38.bed",
         tmpdir = "/beegfs/scratch/tmp" 
     output:
         db = directory("pon_dbs")
@@ -176,7 +176,7 @@ rule genomics_db_import:
 rule PON:
     input:
         args = "pon_dbs",
-        ref_fasta = "/beegfs/datasets/buffer/ric.cosr/GRCh38_Verily_AM/GRCh38_Verily/bwa-0.7.12/GRCh38_Verily_v1.genome.fa"
+        ref_fasta = "GRCh38_Verily/bwa-0.7.12/GRCh38_Verily_v1.genome.fa"
     params:
         args = "gendb://pon_dbs"
     output:
@@ -196,10 +196,10 @@ rule Tumor_matched_Normal:
         tumor = "BQSR_T/{pref}_T_recal.bam",
         normal = "BQSR/{pref}_C_recal.bam",
         pon = "pon.vcf.gz",
-        ref_fasta = "/beegfs/datasets/buffer/ric.cosr/GRCh38_Verily_AM/GRCh38_Verily/bwa-0.7.12/GRCh38_Verily_v1.genome.fa"
+        ref_fasta = "GRCh38_Verily/bwa-0.7.12/GRCh38_Verily_v1.genome.fa"
     params:
         normal = "{pref}_C",
-        germres = "/beegfs/datasets/genomes/hg38/GATK_pypette/af-only-gnomad.hg38.vcf.gz",
+        germres = "af-only-gnomad.hg38.vcf.gz",
         tmpdir = "/beegfs/scratch/tmp"
     output:  
         vcf = "{pref}_somatic_T.vcf.gz"
@@ -218,7 +218,7 @@ rule Tumor_matched_Normal:
 
 rule Filter:
     input:
-        genome = "/beegfs/datasets/buffer/ric.cosr/GRCh38_Verily_AM/GRCh38_Verily/bwa-0.7.12/GRCh38_Verily_v1.genome.fa",
+        genome = "GRCh38_Verily/bwa-0.7.12/GRCh38_Verily_v1.genome.fa",
         tumor = "{pref}_somatic_T.vcf.gz"
     params:
         tmpdir = "/beegfs/scratch/tmp"
