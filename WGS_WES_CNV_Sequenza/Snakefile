@@ -88,7 +88,7 @@ rule seqz:
     input:
         T_bam = "sorted/{pref}_T_markdup.bam",
         N_bam = "sorted/{pref}_C_markdup.bam",
-        ref_fasta = "/beegfs/datasets/buffer/ric.cosr/GRCh38_Verily_AM/GRCh38_Verily/bwa-0.7.12/GRCh38_Verily_v1.genome.fa",
+        ref_fasta = "GRCh38_Verily_v1.genome.fa",
         gc = "GRCh38_Verily_v1.gc50Base.wig"
     output:
         seqz = "{pref}_new.seqz.gz"
@@ -134,7 +134,7 @@ rule Rscript:
         . $HOME/.bashrc
         conda activate Sequenza
         grep {wildcards.pref} {input.sex} > {wildcards.pref}/{wildcards.pref}_sex.txt
-        sed "s#SNAME#{wildcards.pref}#g" /beegfs/scratch/ric.cosr/ric.cosr/Menarini/sequenza.R > {wildcards.pref}/{wildcards.pref}_sequenza.R
+        sed "s#SNAME#{wildcards.pref}#g" sequenza.R > {wildcards.pref}/{wildcards.pref}_sequenza.R
         cat {wildcards.pref}/{wildcards.pref}_sequenza.R | R --slave --args {input.seqz} {wildcards.pref}/{wildcards.pref}_sex.txt
         touch {output}
         conda deactivate'
