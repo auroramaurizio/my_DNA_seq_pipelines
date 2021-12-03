@@ -1,0 +1,7 @@
+A	F
+B	T
+C	T
+D	F
+E	F
+F	F
+
