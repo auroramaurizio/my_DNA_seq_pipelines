@@ -69,7 +69,7 @@ rule all:
 #1 Process a FASTA file to produce a GC Wiggle track file:
 rule wiggle:
     input:
-        ref_fasta = "/beegfs/datasets/buffer/ric.cosr/GRCh38_Verily_AM/GRCh38_Verily/bwa-0.7.12/GRCh38_Verily_v1.genome.fa"
+        ref_fasta = "/GRCh38_Verily_v1.genome.fa"
     output:
         wig = "GRCh38_Verily_v1.gc50Base.wig"
     resources: time_min=5000, mem_mb=48000, cpus=1
