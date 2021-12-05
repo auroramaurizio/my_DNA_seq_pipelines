@@ -1,0 +1,101 @@
+#read quality check with kraken
+
+import sys
+import logging
+from snakemake.io import glob_wildcards, expand
+import glob,os
+import pathlib
+import csv
+import pandas as pd
+import numpy as np
+
+
+
+DATADIR_SHORT="/directory/with/fastq"
+
+
+SUFF = set(['A1', 'B1', 'C1'])
+
+SUFFIX = ' '.join(map(str, SUFF))
+
+print(SUFFIX)
+
+
+
+PATIENTS = ' '.join(map(str, SAMPLELIST))
+print("PATIENTS",PATIENTS)
+
+
+path = "logs_slurm"
+try:
+    os.mkdir(path)
+except OSError:
+    print ("Creation of the directory %s failed" % path)
+else:
+    print ("Successfully created the directory %s " % path)
+
+
+
+rule all:
+    input:
+        expand(["qc/{pref}"], pref=SUFFIX.split(' ')),
+        expand(["KRAKEN_ALL/{pref}_kraken2.log"], pref=SUFFIX.split(' '))
+                                       
+
+
+
+
+rule mergeFastq:
+    output:
+        R1 = "MERGED/{pref}_R1.fastq.gz",
+        R2 = "MERGED/{pref}_R2.fastq.gz"
+    params: DATADIR_SHORT
+    resources: time_min = 500, mem_mb=2500, cpus = 2
+    shell: """
+        mkdir -p MERGED
+        cat {params}/{wildcards.pref}_S*_R1_001.fastq.gz > {output.R1}
+        cat {params}/{wildcards.pref}_S*_R2_001.fastq.gz > {output.R2}
+        """
+
+
+rule fastqc:
+    input:
+        R1 = "MERGED/{pref}_R1.fastq.gz",
+        R2 = "MERGED/{pref}_R2.fastq.gz"
+    output:
+        directory("qc/{pref}")
+    params: ""
+    log:
+        "logs/fastqc/{pref}.log"
+    threads: 12
+    resources: time_min = 50000, mem_mb=25000, cpus = 32
+    shell:"""
+        mkdir -p "qc/{wildcards.pref}"
+        fastqc -o {output} {input.R1} {input.R2}
+        """
+
+
+rule contaminant_ALL:
+    input:
+        R1 = "MERGED/{pref}_R1.fastq.gz"
+    output:"KRAKEN_ALL/{pref}_kraken2.log"
+    params:
+        db= "/KRAKENDB/HumanMouseRatRabbitBosVirusBacteria/"
+    threads: 32
+    resources: time_min = 50000, mem_mb=128000, cpus = 32
+    shell: """
+       mkdir -p KRAKEN_ALL
+       kraken2 --db {params.db} --threads {threads} --use-names --gzip-compressed --report {output} {input.R1}
+
+
+rule MQC:
+    params:
+        KRAKEN = "KRAKEN_ALL/",
+        QC = "qc/"
+    output: "MQC.done"
+    resources: time_min = 5000, mem_mb=12800, cpus = 16
+    shell:"""
+       multiqc {params.KRAKEN} {params.QC}
+       touch {output}
+       """
+
