@@ -1,0 +1,6 @@
+#!/bin/bash
+
+
+cnvkit.py call -o $1 $2
+
+

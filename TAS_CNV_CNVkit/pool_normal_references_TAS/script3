@@ -1,0 +1,1 @@
+for i in $1; do cnvkit.py call -m clonal --purity $i -o $2 $3; done
