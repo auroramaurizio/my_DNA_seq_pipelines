@@ -1,0 +1,135 @@
+import sys
+import os
+import logging
+from snakemake.io import glob_wildcards, expand
+
+logging.basicConfig(
+    filename="output.log", level=logging.DEBUG, filemode='w')
+
+inputdir="/dir/where/the/BAM/are"
+samplelist = []
+discarded = []
+size = 10000
+
+"""
+# consider for the pipeline only bam files bigger than size
+# put the filenames of the bam files (without extension) in a list
+# convert the list to string
+# divide in 2 groups tumor and normal
+"""
+
+
+for file in os.listdir(inputdir):
+    full_path = os.path.join(inputdir, file)
+    filesize=os.path.getsize(full_path)
+    if file.endswith('.bam') and filesize > size:
+        samplelist.append(file.split(".")[0])
+        logging.debug("good file: %s, size: %d ",file, filesize)
+        #print("good file",file,os.path.getsize(full_path))
+    elif file.endswith('.bam') and filesize < size:
+        discarded.append(file.split(".")[0])
+        logging.debug("bad file: %s, size: %d",file, filesize)
+        #print("bad file",file,os.path.getsize(full_path))
+logging.debug("samplelist: %s,length: %d",samplelist,len(samplelist))
+logging.debug("discarded: %s, length: %d",discarded,len(discarded))
+
+
+T = [x for x in samplelist if '1TA' in x]
+TUMOR = ' '.join(map(str, T))
+logging.debug("TUMOR: %s",TUMOR)
+logging.debug("N TUMORS: %d", len(T))
+
+N = [x for x in samplelist if '2NAD' in x]
+NORMAL = ' '.join(map(str, N))
+logging.debug("NORMAL: %s",NORMAL)
+logging.debug("N NORMALS: %d", len(N))
+
+
+
+"""
+# execute only on a subset of the dataset (2Tumors and 2Normals)
+
+T_2samples = T[0:2]
+N_2samples = N[0:2]
+
+TUMOR = ' '.join(map(str, T_2samples))
+logging.debug("TUMOR sub: %s", TUMOR)
+logging.debug("N TUMORS sub: %d", len(T_2samples))
+
+
+NORMAL = ' '.join(map(str, N_2samples))
+logging.debug("NORMAL sub: %s", NORMAL)
+logging.debug("N NORMALS sub: %d", len(N_2samples))
+"""
+
+according to the given reference.
+
+        Parameters
+        -------
+
+        target : Target coverage file (.targetcoverage.cnn).
+        antitarget : Antitarget coverage file (.antitargetcoverage.cnn).
+        reference : Reference coverage (.cnn).
+
+        Returns
+        -------
+        (tumor) copy number file (.cnr)
+"""
+
+
+rule cnvkit_fix:
+    input:
+        TARGET_COVERAGE="CNVKIT_DATA_CT/{tumor}.targetcoverage.cnn",
+        ANTITARGET="CNVKIT_DATA/antitarget.cnn",
+        REFERENCE_NORMALS="CNVKIT_DATA/reference.cnn"
+    output:
+        "CNVKIT_DATA/{tumor}.cnr"
+    shell:
+        "cnvkit.py fix {input.TARGET_COVERAGE} {input.ANTITARGET} {input.REFERENCE_NORMALS} --no-edge -o {output}"
+
+
+rule cnvkit_segment:
+    input:
+        "CNVKIT_DATA/{tumor}.cnr"
+    output:
+        "CNVKIT_DATA/{tumor}.cns"
+    shell:
+        "cnvkit.py segment {input} -o {output}"
+
+
+rule cnvkit_scatter:
+    input:
+        "CNVKIT_DATA/{tumor}.cnr"
+    output:
+        "CNVKIT_PLOTS/{tumor}-scatter.pdf"
+    params:
+        "CNVKIT_DATA/{tumor}.cns"
+    shell:
+        "cnvkit.py scatter {input} -s {params} -o {output}"
+
+rule cnvkit_diagram:
+    input:
+        "CNVKIT_DATA/{tumor}.cnr"
+    output:
+        "CNVKIT_PLOTS/{tumor}-diagram.pdf"
+    params:
+        "CNVKIT_DATA/{tumor}.cns"
+    shell:
+        "cnvkit.py diagram {input} -s {params} -o {output}"
+
+rule cnvkit_heatmap:
+    input:
+        expand(["CNVKIT_DATA/{tumor}.cns"], tumor=TUMOR.split(' '))
+    output:
+        "CNVKIT_PLOTS/all_heatmap.pdf"
+    shell:
+        "cnvkit.py heatmap {input} -o {output}"
+
+rule cnvkit_call:
+    input:
+        "CNVKIT_DATA/{tumor}.cns"
+    output:
+        "CNVKIT_DATA/{tumor}.call.cns"
+    shell:
+        "cnvkit.py call {input} -o {output}"
+
