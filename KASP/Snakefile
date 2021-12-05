@@ -1,0 +1,61 @@
+import sys
+import logging
+from snakemake.io import glob_wildcards, expand
+import glob,os
+import pathlib
+import csv
+import pandas as pd
+import numpy as np
+
+#import multiqc
+
+DATADIR_SHORT="/../"
+
+
+#DATADIR_SHORT
+
+
+
+SAMPLE_LIST_DIR = os.listdir(DATADIR_SHORT)"])
+
+SUFFIX = ' '.join(map(str, SUFF))
+
+print("SUFFIX",SUFFIX)
+
+
+path = "logs_slurm"
+try:
+
+    os.mkdir(path)
+except OSError:
+    print ("Creation of the directory %s failed" % path)
+else:
+    print ("Successfully created the directory %s " % path)
+
+
+rule all:
+    input:
+      expand(["KASP/{pref}_KASP_T.vcf.gz"], pref=SUFFIX.split(' '))
+
+
+rule gatk__callLocation:
+    input:
+        bam = "BQSR_T/{pref}_T_recal.bam",
+        ref_fasta = "/beegfs/datasets/buffer/ric.cosr/GRCh38_Verily_AM/GRCh38_Verily/bwa-0.7.12/GRCh38_Verily_v1.genome.fa",
+        Vlist =  "myClean.vcf"
+    output:
+        vcfz = "KASP/{pref}_KASP_T.vcf.gz"
+    resources: name = "MMnGM_gatkCall", time_min=50000, mem_mb=48000, cpus=36
+    shell:
+        """
+        gatk HaplotypeCaller --java-options -Xmx30g \
+         --input {input.bam} \
+         --output {output.vcfz} \
+         --reference {input.ref_fasta} \
+         -L {input.Vlist} -ip 100
+        """
+
+
+#vcftools --gzvcf 1_KASP_T.vcf.gz --gzdiff 1_KASP_C.vcf.gz --diff-site --out 1_KASP_T_vs_1_KASP_C
+
+
