@@ -1,0 +1,177 @@
+import sys
+import os
+import logging
+from snakemake.io import glob_wildcards, expand
+
+logging.basicConfig(
+    filename="output.log", level=logging.DEBUG, filemode='w')
+
+inputdir="BAM"
+samplelist = []
+discarded = []
+size = 10000
+
+"""
+# consider for the pipeline only bam files bigger than size
+# put the filenames of the bam files (without extension) in a list
+# convert the list to string
+# divide in 2 groups tumor and normal
+"""
+
+for file in os.listdir(inputdir):
+    full_path = os.path.join(inputdir, file)
+    filesize=os.path.getsize(full_path)
+    if file.endswith('.bam') and filesize > size:
+        samplelist.append(file.split(".")[0])
+        logging.debug("good file: %s, size: %d ",file, filesize)
+        #print("good file",file,os.path.getsize(full_path))
+    elif file.endswith('.bam') and filesize < size:
+        discarded.append(file.split(".")[0])
+        logging.debug("bad file: %s, size: %d",file, filesize)
+        #print("bad file",file,os.path.getsize(full_path))
+logging.debug("samplelist: %s,length: %d",samplelist,len(samplelist))
+logging.debug("discarded: %s, length: %d",discarded,len(discarded))
+
+T = [x for x in samplelist if '1TA' in x]
+
+"""
+TUMOR = ' '.join(map(str, T))
+logging.debug("TUMOR: %s",TUMOR)
+logging.debug("N TUMORS: %d", len(T))
+"""
+
+N = [x for x in samplelist if '2NAD' in x]
+"""
+NORMAL = ' '.join(map(str, N))
+logging.debug("NORMAL: %s",NORMAL)
+logging.debug("N NORMALS: %d", len(N))
+"""
+
+
+# execute only on a subset of the dataset (2Tumors and 2Normals)
+
+T_2samples = T[0:2]
+N_2samples = N[0:2]
+
+TUMOR = ' '.join(map(str, T_2samples))
+logging.debug("TUMOR sub: %s", TUMOR)
+logging.debug("N TUMORS sub: %d", len(T_2samples))
+
+
+NORMAL = ' '.join(map(str, N_2samples))
+logging.debug("NORMAL sub: %s", NORMAL)
+logging.debug("N NORMALS sub: %d", len(N_2samples))
+
+
+"""So far, we always executed the workflow by specifying a target file at the
+command line. Apart from filenames, Snakemake also accepts rule names as
+targets if the referred rule does not have wildcards. Hence, it is possible
+to write target rules collecting particular subsets of the desired results or
+all results. Moreover, if no target is given at the command line,
+Snakemake will define the first rule of the Snakefile as the target.
+Hence, it is best practice to have a rule all at the top of the workflow
+which has all typically desired target files as input files.
+"""
+
+rule all:
+    input:
+        expand('CNVKIT_PLOTS/{tumor}-diagram.pdf', tumor=TUMOR.split(' ')),
+        expand('CNVKIT_PLOTS/{tumor}-scatter.pdf', tumor=TUMOR.split(' ')),
+        expand('CNVKIT_PLOTS/all_heatmap.pdf', tumor=TUMOR.split(' ')),
+        expand('{tumor}.CNVKIT/{tumor}.call.cns', tumor=TUMOR.split(' '))
+
+
+
+"""Targeted Amplicon Sequencing with cnvkit (TAS)
+When amplicon sequencing is used as a targeted capture method, no off-target reads are sequenced.
+While this limits the copy number information available in the sequencing data versus hybrid capture,
+CNVkit can analyze TAS data using only on-target coverages and excluding all off-target regions from the analysis.
+This approach does not collect any copy number information between targeted regions, so it should only be used if
+you have in fact prepared your samples with a targeted amplicon sequencing protocol.
+It also does not attempt to further normalize each amplicon at the gene level, though this may be addressed in a
+future version of CNVkit.
+
+
+IMPORTANT: Do not mark duplicates in the BAM files for samples sequenced by this method.
+
+"""
+
+
+"""STRATEGY 1.1 for TAS:
+
+!!! here the reference is built from normal bam files !!!
+The batch -m amplicon option uses the given targets to infer coverage
+
+
+        Parameters
+        -------
+        input:
+        bam_files : Mapped sequence tumor reads (.bam).
+        targets : BED or interval file listing the targeted regions.
+        normal reference : listo of normal samples (.bam).
+
+        Returns
+        -------
+        A folder containing all CNV data
+
+"""
+
+
+rule cnvkit_batch:
+    input:
+        BAM_TUMOR = os.path.join(inputdir, "{tumor}.bam")
+    output:
+        "{tumor}.CNVKIT/targets.target.bed",
+        "{tumor}.CNVKIT/targets.antitarget.bed",
+        "{tumor}.CNVKIT/reference.cnn",
+        "{tumor}.CNVKIT/{tumor}.targetcoverage.cnn",
+        "{tumor}.CNVKIT/{tumor}.antitargetcoverage.cnn",
+        "{tumor}.CNVKIT/{tumor}.cnr",
+        "{tumor}.CNVKIT/{tumor}.cns"
+    params:
+        FOLDER="{tumor}.CNVKIT",
+        TARGET="/lustre2/scratch/amaurizio/ACC_ANALYSIS/SNAKE/targets.bed",
+        NORMALS=expand([os.path.join(inputdir, "{normal}.bam")], normal=NORMAL.split(' '))
+        #PROCESSES='6'
+    shell:
+        "cnvkit.py batch -m amplicon -p 10  -t {params.TARGET} -n {params.NORMALS} --output-dir {params.FOLDER} {input.BAM_TUMOR}"
+
+rule cnvkit_scatter:
+    input:
+        "{tumor}.CNVKIT/{tumor}.cnr"
+    output:
+        "CNVKIT_PLOTS/{tumor}-scatter.pdf"
+    params:
+        "{tumor}.CNVKIT/{tumor}.cns"
+    shell:
+        "cnvkit.py scatter {input} -s {params} -o {output}"
+
+
+rule cnvkit_diagram:
+    input:
+        "{tumor}.CNVKIT/{tumor}.cnr"
+    output:
+        "CNVKIT_PLOTS/{tumor}-diagram.pdf"
+    params:
+        "{tumor}.CNVKIT/{tumor}.cns"
+    shell:
+        "cnvkit.py diagram {input} -s {params} -o {output}"
+
+
+rule cnvkit_heatmap:
+    input:
+        expand(["{tumor}.CNVKIT/{tumor}.cns"], tumor=TUMOR.split(' '))
+    output:
+        "CNVKIT_PLOTS/all_heatmap.pdf"
+    shell:
+        "cnvkit.py heatmap {input} -o {output}"
+
+
+rule cnvkit_call:
+    input:
+        "{tumor}.CNVKIT/{tumor}.cns"
+    output:
+        "{tumor}.CNVKIT/{tumor}.call.cns"
+    shell:
+        "cnvkit.py call {input} -o {output}"
+
