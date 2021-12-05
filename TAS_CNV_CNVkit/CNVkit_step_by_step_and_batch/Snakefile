@@ -1,0 +1,441 @@
+import sys
+import os
+import logging
+from snakemake.io import glob_wildcards, expand
+import csv
+import pandas as pd
+import numpy as np
+
+
+logging.basicConfig(
+    filename="output.log", level=logging.DEBUG, filemode='w')
+
+inputdir="BAM_FILES"
+samplelist = []
+discarded = []
+size = 10000
+target_file="targets.bed"
+fish_file="Samples_Barcodes.txt"
+fish_info =  pd.read_csv(fish_file, sep='\t', header=(0))
+annotation="genomes/hg19/annotation/hg19.refFlat.txt"
+#https://pages.charlesreid1.com/how-do-i-snakemake/converting/
+
+#condactivate pypette-dna
+#run in a node with snakemake -rj 10
+"""
+# consider for the pipeline only bam files bigger than size
+# put the filenames of the bam files (without extension) in a list
+# convert the list to string
+# divide in 2 groups tumor and normal
+
+#run with snakemake --cluster qsub -j 10
+
+"""
+
+for file in os.listdir(inputdir):
+    full_path = os.path.join(inputdir, file)
+    filesize=os.path.getsize(full_path)
+    if file.endswith('.bam') and filesize > size:
+        samplelist.append(file.split(".")[0])
+        logging.debug("good file: %s, size: %d ",file, filesize)
+    elif file.endswith('.bam') and filesize < size:
+        discarded.append(file.split(".")[0])
+        logging.debug("bad file: %s, size: %d",file, filesize)
+logging.debug("samplelist: %s,length: %d",samplelist,len(samplelist))
+logging.debug("discarded: %s, length: %d",discarded,len(discarded))
+
+
+T = [x for x in samplelist if '1TA' in x]
+TUMOR = ' '.join(map(str, T))
+logging.debug("TUMOR: %s",TUMOR)
+logging.debug("N TUMORS: %d", len(T))
+N = [x for x in samplelist if '2NAD' in x]
+NORMAL = ' '.join(map(str, N))
+logging.debug("NORMAL: %s",NORMAL)
+logging.debug("N NORMALS: %d", len(N))
+
+
+
+
+"""
+
+# execute only on a subset of the dataset (2Tumors and 2Normals)
+
+T_2samples = T[0:2]
+N_2samples = N[0:2]
+
+TUMOR = ' '.join(map(str, T_2samples))
+logging.debug("TUMOR sub: %s", TUMOR)
+logging.debug("N TUMORS sub: %d", len(T_2samples))
+
+NORMAL = ' '.join(map(str, N_2samples))
+logging.debug("NORMAL sub: %s", NORMAL)
+logging.debug("N NORMALS sub: %d", len(N_2samples))
+"""
+
+
+# ignore errors
+shell.prefix("set +o pipefail; ")
+
+        expand('CNVKIT_PLOTS/{tumor}-diagram.pdf', tumor=TUMOR.split(' ')),
+        expand('CNVKIT_PLOTS/{tumor}-scatter.pdf', tumor=TUMOR.split(' ')),
+        expand('CNVKIT_PLOTS/all_heatmap.pdf', tumor=TUMOR.split(' ')),
+        expand('CNVKIT_PLOTS/{tumor}-density.pdf', tumor=TUMOR.split(' ')),
+        expand('{tumor}.CNVKIT/{tumor}.call.num_genes.cns', tumor=TUMOR.split(' ')),
+        "gene_summary.tsv"
+
+
+"""Targeted Amplicon Sequencing with cnvkit (TAS)
+
+WITH ANNOTATION FILE Flagstat.txt
+
+When amplicon sequencing is used as a targeted capture method, no off-target
+reads are sequenced. While this limits the copy number information available in
+the sequencing data versus hybrid capture, CNVkit can analyze TAS data using
+only on-target coverages and excluding all off-target regions from the analysis.
+This approach does not collect any copy number information between targeted
+regions, so it should only be used if you have in fact prepared your samples
+with a targeted amplicon sequencing protocol. It also does not attempt to
+further normalize each amplicon at the gene level, though this may be addressed
+in a future version of CNVkit.
+
+
+IMPORTANT: Do not mark duplicates in the BAM files for samples sequenced by
+this method.
+
+"""
+
+
+"""
+step1) Format the targets
+
+            Parameters
+            -------
+
+            interval : BED or interval file listing the targeted regions.
+             --split   Split large tiled intervals into smaller, consecutive
+                       targets.
+
+"""
+
+
+rule cnvkit_target:
+    input:
+        target_file
+    output:
+        "CNVKIT_DATA/targets.split.bed"
+    params:
+        annotation
+    shell:
+        "cnvkit.py target {input} --annotate {params} --split -o {output}"
+
+
+#snakemake CNVKIT_DATA/targets.split.bed
+
+
+
+"""step3.2) Calculate coverage in the given regions from BAM read depths - NORMAL
+
+            Parameters
+            -------
+            bam_file : Normal Mapped sequence reads (.bam)
+            interval : Intervals (.bed or .list)
+
+
+            Returns
+            -------
+            for each NORMAL sample the coverage (.cnn)
+
+"""
+
+
+rule cnvkit_coverage_normal:
+    input:
+        BAM_NORMAL=os.path.join(inputdir, "{normal}.bam"),
+        TARGET="CNVKIT_DATA/targets.split.bed"
+    output:
+        "CNVKIT_DATA/{normal}.targetcoverage.cnn"
+    shell:
+        "cnvkit.py coverage {input.BAM_NORMAL} {input.TARGET} -p 12 -o {output}"
+
+
+#snakemake CNVKIT_DATA/{normal}.targetcoverage.cnn
+
+
+
+
+"""step4) Build a reference from normal samples
+
+        Parameters
+        -------
+
+        references : List of normal-sample target or antitarget .cnn files, or the
+            directory that contains them. (We want use normal-samples)
+
+        Returns
+        -------
+        reference from normal samples
+
+"""
+
+rule cnvkit_reference:
+    input:
+        REFERENCES=expand(["CNVKIT_DATA/{normal}.targetcoverage.cnn"], normal=NORMAL.split(' '))
+    output:
+        "CNVKIT_DATA/reference.cnn",
+    shell:
+        "cnvkit.py reference {input.REFERENCES} -o {output}"
+
+
+
+#snakemake CNVKIT_DATA/reference.cnn
+
+
+
+
+
+"""STRATEGY 1.2 for TAS:
+
+!!! you should build the reference as described below in 3.2 and 4 !!!
+The batch -m amplicon option uses the given targets to infer coverage
+
+        Parameters
+        -------
+        input:
+        bam_files : Mapped sequence tumor reads (.bam).
+        targets : BED or interval file listing the targeted regions.
+        normal reference : reference built from normal samples (.cnn).
+
+        Returns
+        -------
+        A folder containing all CNV data
+"""
+
+
+rule cnvkit_batch:
+    input:
+        BAM_TUMOR=os.path.join(inputdir, "{tumor}.bam"),
+        REFERENCE="CNVKIT_DATA/reference.cnn"
+    output:
+        "{tumor}.CNVKIT/reference.target-tmp.bed",
+        "{tumor}.CNVKIT/reference.antitarget-tmp.bed",
+        "{tumor}.CNVKIT/{tumor}.targetcoverage.cnn",
+        "{tumor}.CNVKIT/{tumor}.cns",
+        "{tumor}.CNVKIT/{tumor}.cnr",
+        "{tumor}.CNVKIT/{tumor}.antitargetcoverage.cnn"
+    params:
+        FOLDER="{tumor}.CNVKIT"
+    shell:
+        "cnvkit.py batch -m amplicon -p 10 -r {input.REFERENCE} --output-dir {params.FOLDER} {input.BAM_TUMOR}"
+
+
+rule cnvkit_scatter:
+    input:
+        "{tumor}.CNVKIT/{tumor}.cnr"
+    output:
+        "CNVKIT_PLOTS/{tumor}-scatter.pdf"
+    params:
+        "{tumor}.CNVKIT/{tumor}.cns"
+    shell:
+        "cnvkit.py scatter {input} -s {params} -o {output}"
+
+
+rule cnvkit_diagram:
+    input:
+        "{tumor}.CNVKIT/{tumor}.cnr"
+    output:
+        "CNVKIT_PLOTS/{tumor}-diagram.pdf"
+    params:
+        "{tumor}.CNVKIT/{tumor}.cns"
+    shell:
+        "cnvkit.py diagram {input} -s {params} -o {output}"
+
+
+rule cnvkit_density:
+    input:
+        CNS="{tumor}.CNVKIT/{tumor}.cns"
+    output:
+        PLOT="CNVKIT_PLOTS/{tumor}-density.pdf"
+    run:
+        import matplotlib.pyplot as plt
+        TAS=pd.read_csv(input.CNS, sep='\t', header=(0))
+        #print(TAS.head())
+        TAS['length']=TAS['end'] - TAS['start']
+        print(len(TAS['length']))
+        plt.hist(TAS['length'], color='steelblue',
+                    edgecolor='none')
+        plt.ticklabel_format(useOffset=False, style='plain')
+        plt.xlabel('CNV width (bp)')
+        plt.xticks(fontsize=6)
+        plt.title('CNV width distribution')
+        #plt.show()
+        plt.savefig(output.PLOT)
+
+
+
+rule cnvkit_heatmap:
+    input:
+        expand(["{tumor}.CNVKIT/{tumor}.cns"], tumor=TUMOR.split(' '))
+    output:
+        "CNVKIT_PLOTS/all_heatmap.pdf"
+    shell:
+        "cnvkit.py heatmap {input} -o {output}"
+
+
+
+rule cnvkit_call:
+    input:
+        "{tumor}.CNVKIT/{tumor}.cns"
+    output:
+        "{tumor}.CNVKIT/{tumor}.call.cns"
+    shell:
+        "cnvkit.py call {input} -o {output}"
+
+
+
+"""
+count genes in cns
+"""
+rule count_genes_in_cns:
+    input:
+        TAS_data="{tumor}.CNVKIT/{tumor}.call.cns"
+    output:
+        "{tumor}.CNVKIT/{tumor}.call.num_genes.cns"
+    run:
+        import pandas as pd
+        TAS=pd.read_csv(input.TAS_data, sep='\t', header=(0))
+        TAS['gene_num']=TAS['gene'].apply(lambda x: len(x.split(',')))
+        TAS.to_csv(output[0], sep='\t', index=False)
+
+
+"""
+explode "gene" column
+"""
+
+rule explode_gene:
+    input:
+        "{tumor}.CNVKIT/{tumor}.call.num_genes.cns"
+    output:
+        ALL_GENES="{tumor}.CNVKIT/{tumor}.call.genes.tsv"
+    shell:
+        """
+        awk '{{ split($4,a,","); \
+        for (i in a) print $1"\t"$2"\t"$3"\t"$5"\t"$6"\t"$7"\t"$8"\t"$10"\t"a[i]"\t"$1"_"$2"_"$3; }}' \
+        {input} > {output.ALL_GENES}
+
+        """
+
+
+"""
+collapse according to gene name (remove the target suffix)
+"""
+
+rule collapse_gene:
+    input:
+        TAS_data="{tumor}.CNVKIT/{tumor}.call.genes.tsv"
+    output:
+        ALL_GENES="{tumor}.CNVKIT/{tumor}.call.genes.collapse.tsv"
+    run:
+        import pandas as pd
+        TAS=pd.read_csv(input.TAS_data, sep='\t', header=(0))
+        TAS['gene'] = TAS['gene'].apply(lambda x: x.split('_')[0])
+        TAS_dd = TAS.drop_duplicates()
+        TAS_dd.to_csv(output[0], sep='\t', index=False)
+
+
+"""
+select only lines containg specific gene
+"""
+
+rule get_gene:
+    input:
+        "{tumor}.CNVKIT/{tumor}.call.genes.collapse.tsv"
+    output:
+        GENE="{tumor}.CNVKIT/{tumor}.call.gene.tsv"
+    shell:
+        """
+        awk 'NR==1 ||\
+        $9 ~ /gene/ {{ print $1"\t"$2"\t"$3"\t"$4"\t"$5"\t"$6"\t"$7"\t"$8"\t"$9"\t"$10}}'  \
+        {input} > {output.GENE}
+        """
+
+
+"""
+Identify targeted genes with copy number gain or loss (above or below a threshold)
+"""
+
+rule genemetrics:
+    input:
+        CNS="{tumor}.CNVKIT/{tumor}.cns",
+        CNR="{tumor}.CNVKIT/{tumor}.cnr"
+    output:
+        GAINLOSS="{tumor}.CNVKIT/{tumor}.gene.gainloss.txt"
+    shell:
+        """
+        cnvkit.py genemetrics -y {input.CNR} -s {input.CNS} > {output.GAINLOSS}
+        """
+
+
+
+
+"""
+compare cnv and fish data
+"""
+
+rule compare_cnvkit_fish:
+    input:
+        TAS_data="{tumor}.CNVKIT/{tumor}.call.gene.tsv"
+    output:
+        "{tumor}.CNVKIT/{tumor}.call.MET.fish_GAIN.tsv"
+    params:
+        FISH=fish_info
+    run:
+  
+        TAS=pd.read_csv(input.TAS_data, sep='\t', header=(0))
+        TAS['id'] = wildcards.tumor
+        merged_inner = pd.merge(left=TAS, right=params.FISH, left_on='id', right_on='Tumor_Sample_Barcode')
+        conditions = [(pd.to_numeric(merged_inner['cn']) > 2) & (pd.to_numeric(merged_inner['NewMet']) >= 4)]
+        choices = ['TRUE']
+        merged_inner['MATCH_GAIN'] = np.select(conditions, choices, default='FALSE')
+        merged_inner.to_csv(output[0], sep='\t', index=False)
+
+
+
+
+
+
+"""
+compare cnv and fish data
+"""
+
+rule compare_cnvkit_fish_l:
+    input:
+        TAS_data="{tumor}.CNVKIT/{tumor}.call.gene.fish_GAIN.tsv"
+    output:
+        "{tumor}.CNVKIT/{tumor}.call.gene.fish_GL.tsv"
+    run:
+        TAS=pd.read_csv(input.TAS_data, sep='\t', header=(0))
+        conditions = [ (pd.to_numeric(TAS['cn']) < 2) & (pd.to_numeric(TAS['NewMet']) < 4)]
+        choices = ['TRUE']
+        TAS['MATCH_LOSS'] = np.select(conditions, choices, default='FALSE')
+        TAS.to_csv(output[0], sep='\t', index=False)
+
+
+
+
+"""
+merge data
+"""
+
+rule summary:
+    input:
+        expand(["{tumor}.CNVKIT/{tumor}.call.gene.fish_GL.tsv"], tumor=TUMOR.split(' '))
+    output:
+        "gene_summary.tsv"
+    run:
+        frames=[]
+        for file in input:
+            frames.append(pd.read_csv(file))
+        result = pd.concat(frames)
+        result.to_csv(output[0], sep='\t', index=False)
+
