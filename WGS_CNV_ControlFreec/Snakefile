@@ -234,8 +234,8 @@ rule qualimap:
 
 rule CONTROL_FREEC:
     input:
-        BAM_T = "sorted/{pat}_DNA_markdup_only_marked.bam",
-        BAM_N = "sorted/{pat}_NORM_DNA_markdup_only_marked.bam"
+        BAM_T = "sorted/{pat}_DNA_markdup.bam",
+        BAM_N = "sorted/{pat}_NORM_DNA_markdup.bam"
     output:
         ratio = "CF/{pat}/{pat}_markdup.bam_ratio.txt",
         CNVs =  "CF/{pat}/{pat}_markdup.bam_CNVs",

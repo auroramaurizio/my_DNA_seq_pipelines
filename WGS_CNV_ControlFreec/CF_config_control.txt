@@ -22,7 +22,7 @@ ContaminationAdjustement=TRUE #set TRUE to correct for contamination by normal c
 
 [sample]
 
-mateFile = sorted/CFdir_DNA_markdup_only_marked.bam
+mateFile = sorted/CFdir_DNA_markdup.bam
 inputFormat = BAM
 #0 (for single ends), RF (Illumina mate-pairs), FR (Illumina paired-ends), FF (SOLiD mate-pairs)
 mateOrientation = FR
@@ -30,7 +30,7 @@ mateOrientation = FR
 
 [control]
 
-mateFile = sorted/CFdir_NORM_DNA_markdup_only_marked.bam
+mateFile = sorted/CFdir_NORM_DNA_markdup.bam
 inputFormat = BAM
 #0 (for single ends), RF (Illumina mate-pairs), FR (Illumina paired-ends), FF (SOLiD mate-pairs)
 mateOrientation = FR
