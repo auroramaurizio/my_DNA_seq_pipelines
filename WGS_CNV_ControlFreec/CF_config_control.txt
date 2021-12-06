@@ -1,0 +1,49 @@
+[general]
+
+chrLenFile = hg38_cleaned.fa.fai
+ploidy = 2
+coefficientOfVariation = 0.05
+
+
+BedGraphOutput=TRUE
+sambamba = sambamba
+SambambaThreads = 72
+chrFiles = /beegfs/datasets/buffer/ric.cosr/GRCh38_Verily_AM/GRCh38_Verily/bwa-0.7.12/chromosomes
+outputDir = CF/CFdir
+degree=3&4
+minCNAlength = 1
+maxThreads = 72
+gemMappabilityFile = out100m2_hg38.gem
+breakPointType = 4
+#window = 100000
+#noisyData = TRUE #set TRUE for target resequencing data (e.g., exome-seq) to avoid false positive predictions due to non-uniform capture
+#contamination = 0.25 #a priori known value of tumor sample contamination by normal cells
+ContaminationAdjustement=TRUE #set TRUE to correct for contamination by normal cells. If "contamination" is not provided, it will automatically evaluate the level of contamination
+
+[sample]
+
+mateFile = sorted/CFdir_DNA_markdup_only_marked.bam
+inputFormat = BAM
+#0 (for single ends), RF (Illumina mate-pairs), FR (Illumina paired-ends), FF (SOLiD mate-pairs)
+mateOrientation = FR
+
+
+[control]
+
+mateFile = sorted/CFdir_NORM_DNA_markdup_only_marked.bam
+inputFormat = BAM
+#0 (for single ends), RF (Illumina mate-pairs), FR (Illumina paired-ends), FF (SOLiD mate-pairs)
+mateOrientation = FR
+
+#The parameters chrLenFile and ploidy are required. Either chrFiles or GCcontentProfile must be specified too if no control dataset is available. 
+
+
+[BAF]
+
+makePileup = dbSNP-151.bed
+SNPfile = chr_dbSNP-151.vcf
+minimalCoveragePerPosition=10
+minimalQualityPerPosition=20
+fastaFile=/beegfs/datasets/buffer/ric.cosr/GRCh38_Verily_AM/GRCh38_Verily/bwa-0.7.12/GRCh38_Verily_v1.genome.fa
+
+
