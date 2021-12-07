@@ -1,0 +1,134 @@
+import sys
+import logging
+from snakemake.io import glob_wildcards, expand
+import glob,os
+import pathlib
+import csv
+import pandas as pd
+import numpy as np
+
+#import multiqc
+
+#DATADIR_SHORT="/FASTQ/"
+
+#SAMPLE_LIST_DIR = os.listdir(DATADIR_SHORT)
+
+)
+
+SUFF = set(["A","B","C","D"])
+
+SUFFIX = ' '.join(map(str, SUFF))
+
+
+PATIENTS = SUFFIX
+
+print("PATIENTS",PATIENTS)
+
+path = "logs_slurm"
+try:
+
+    os.mkdir(path)
+except OSError:
+    print ("Creation of the directory %s failed" % path)
+else:
+    print ("Successfully created the directory %s " % path)
+
+
+
+rule all:
+    input:
+        expand(["CF/{pat}/plot_CNV_flat_logratio_{pat}.pdf"], pat=PATIENTS.split(' '))
+       
+
+
+
+
+rule CONTROL_FREEC:
+    input:
+        BAM_T = "sorted/{pat}_T_markdup.bam",
+        BAM_C = "sorted/{pat}_C_markdup.bam"
+    output:
+        ratio = "CF/{pat}/{pat}_T_markdup.bam_ratio.txt",
+        CNVs =  "CF/{pat}/{pat}_T_markdup.bam_CNVs",
+        number = "CF/{pat}/number_of_cnvs_in_{pat}",
+        BAF = "CF/{pat}/{pat}_T_markdup.bam_BAF.txt"
+    resources: time_min = 50000, mem_mb=128000, cpus = 72
+    shell:"""
+        mkdir -p CF/{wildcards.pat}
+        sed "s#CFdir#{wildcards.pat}#g" config_control.txt > CF/config_{wildcards.pat}.txt
+            freec -conf CF/config_{wildcards.pat}.txt -sample {input.BAM_T} -control {input.BAM_C}  || true
+            wc -l CF/{wildcards.pat}/{wildcards.pat}_markdup.bam_CNVs > {output.number} || true
+        """
+
+
+rule CONTROL_FREEC_stat:
+    input:
+        ratio = "CF/{pat}/{pat}_T_markdup.bam_ratio.txt",
+        CNVs =  "CF/{pat}/{pat}_T_markdup.bam_CNVs"
+        #number = "CF/{pat}/number_of_cnvs_in_{pat}"
+    output:
+        PV = "CF/{pat}/{pat}_T_markdup.bam_CNVs.p.value.txt",
+        PV_filtered = "CF/{pat}/{pat}_T_markdup.bam_CNVs.p.value.filtered.txt"
+    resources: time_min = 50000, mem_mb=128000, cpus = 16
+    shell:"""
+        if [ `cat {input.CNVs} | wc -l` -gt 0 ] ; then
+            cat assess_significance.R | R --slave --args {input.CNVs} {input.ratio}
+            touch {output.PV}
+            awk '$8 < 0.01' {output.PV} | awk '$9 < 0.01' > {output.PV_filtered}
+            sed -i "1 i\CNVchr  CNVstart        CNVend  copy_number     status 	genotype	uncertainty	 WilcoxonRankSumTestPvalue       KolmogorovSmirnovPvalue" {output.PV_filtered}
+        else
+            touch {output.PV}
+            touch {output.PV_filtered}
+            echo "CNVchr  CNVstart        CNVend  copy_number     status  genotype	uncertainty	WilcoxonRankSumTestPvalue       KolmogorovSmirnovPvalue" >> {output.PV_filtered}
+        fi
+        """
+
+
+rule CONTROL_FREEC_plot:
+    input:
+        PV_filtered = "CF/{pat}/{pat}_T_markdup.bam_CNVs.p.value.filtered.txt",
+    output:
+        "CF/{pat}/plot_CNV_{pat}.pdf"
+    resources: time_min = 50000, mem_mb=128000, cpus = 16
+    shell:"""
+        bash -c '
+        . $HOME/.bashrc
+        conda activate PLOT
+        if [ `cat {input.PV_filtered} | wc -l` -gt 1 ] ; then
+            cat plot_exome.R | R --slave --args {input.PV_filtered} {output} {wildcards.pat}
+            rm "CF/{wildcards.pat}/number_of_cnvs_in_{wildcards.pat}"
+        else
+            touch {output}
+            rm "CF/{wildcards.pat}/number_of_cnvs_in_{wildcards.pat}"
+            touch "CF/{wildcards.pat}/number_of_filtered_cnvs_in_{wildcards.pat}"
+        fi
+        conda deactivate'
+        """
+
+rule CONTROL_FREEC_plot_flat_logratio:
+    input:
+        baf = "CF/{pat}/{pat}_T_markdup.bam_BAF.txt",
+        PV_filtered = "CF/{pat}/{pat}_T_markdup.bam_CNVs.p.value.filtered.txt",
+        ratio = "CF/{pat}/{pat}_T_markdup.bam_ratio.txt"
+    output:
+        "CF/{pat}/plot_CNV_flat_logratio_{pat}.pdf"
+    resources: time_min = 50000, mem_mb=128000, cpus = 16
+    shell:"""
+        bash -c '
+        . $HOME/.bashrc
+        conda activate PLOT
+        if [ `cat {input.PV_filtered} | wc -l` -gt 1 ] ; then
+            cat plot_flat_ratio_exome.R | R --slave --args {input.ratio} {input.PV_filtered} {input.baf} {output} {wildcards.pat}
+            rm "CF/{wildcards.pat}/number_of_cnvs_in_{wildcards.pat}"
+        else
+            touch {output}
+            rm "CF/{wildcards.pat}/number_of_cnvs_in_{wildcards.pat}"
+            touch "CF/{wildcards.pat}/number_of_filtered_cnvs_in_{wildcards.pat}"
+        fi
+        conda deactivate'
+        """
+
+
+
+
+

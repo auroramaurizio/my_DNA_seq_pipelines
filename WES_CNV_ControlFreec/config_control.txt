@@ -1,0 +1,59 @@
+[general]
+
+chrLenFile = hg38_cleaned.fa.fai
+ploidy = 2,3,4
+window = 0
+breakPointThreshold=0.8
+noisyData=TRUE
+printNA=FALSE
+minCNAlength=2
+#minMappabilityPerWindow=0.85
+#step=250
+BedGraphOutput=TRUE
+sambamba = sambamba
+SambambaThreads = 72
+chrFiles = /BWA_Hg38/chromosomes
+outputDir = CF/CFdir
+degree=1
+#minCNAlength = 1
+maxThreads = 72
+gemMappabilityFile = out100m2_hg38.gem
+breakPointType = 4
+readCountThreshold=10
+minimalSubclonePresence=30
+BedGraphOutput=TRUE
+contaminationAdjustment=TRUE
+#contamination=25
+
+[sample]
+
+
+mateFile = sorted/CFdir_T_markdup.bam
+inputFormat = BAM
+#0 (for single ends), RF (Illumina mate-pairs), FR (Illumina paired-ends), FF (SOLiD mate-pairs)
+mateOrieintation = FR
+
+
+[control]
+
+
+mateFile = sorted/CFdir_C_markdup.bam
+inputFormat = BAM
+#0 (for single ends), RF (Illumina mate-pairs), FR (Illumina paired-ends), FF (SOLiD mate-pairs)
+mateOrientation = FR
+
+#The parameters chrLenFile and ploidy are required. Either chrFiles or GCcontentProfile must be specified too if no control dataset is available. 
+#freec -conf config.txt -sample /beegfs/scratch/ric.cosr/maurizio.aurora/mapped/LUNG181219_A3.bam
+
+[BAF]
+
+makePileup = dbSNP-151.bed
+SNPfile = chr_dbSNP-151.vcf
+minimalCoveragePerPosition=5
+minimalQualityPerPosition=20
+shiftInQuality=33
+fastaFile=/bwa-0.7.12/GRCh38_Verily_v1.genome.fa
+
+[target]
+
+captureRegions = Twist_Exome_Target_hg38.bed

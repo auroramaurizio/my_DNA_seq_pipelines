@@ -9,7 +9,7 @@ import numpy as np
 
 #import multiqc
 
-DATADIR_SHORT="/directory/where/I/can/find/my/FASTQ"
+DATADIR_SHORT="FASTQ"
 SAMPLE_LIST_DIR = os.listdir(DATADIR_SHORT)
 
 
@@ -53,7 +53,7 @@ rule all:
         #expand(["qc/{pref}"], pref=SUFFIX.split(' ')),
         #expand(["MERGED/{pref}_R1.fastq.gz","MERGED/{pref}_R2.fastq.gz"], pref=SUFFIX.split(' ')),
         #expand(["sorted/{pref}_markdup_only_marked.bam"], pref=SUFFIX.split(' ')),
-        #expand(["CF/{pat}/plot_CNV_flat_logratio_{pat}.pdf"], pat=PATIENT.split(' ')),
+        expand(["CF/{pat}/plot_CNV_flat_logratio_{pat}.pdf"], pat=PATIENT.split(' ')),
         expand(["CF/{pat}/plot_CNV_{pat}.pdf"], pat=PATIENT.split(' '))
 
 
@@ -237,28 +237,28 @@ rule CONTROL_FREEC:
         BAM_T = "sorted/{pat}_DNA_markdup.bam",
         BAM_N = "sorted/{pat}_NORM_DNA_markdup.bam"
     output:
-        ratio = "CF/{pat}/{pat}_markdup.bam_ratio.txt",
-        CNVs =  "CF/{pat}/{pat}_markdup.bam_CNVs",
+        ratio = "CF/{pat}/{pat}_DNA_markdup.bam_ratio.txt",
+        CNVs =  "CF/{pat}/{pat}_DNA_markdup.bam_CNVs",
         number = "CF/{pat}/number_of_cnvs_in_{pat}"
     resources: time_min = 50000, mem_mb=128000, cpus = 72
     shell:"""
         mkdir -p CF/{wildcards.pat}
         sed "s#CFdir#{wildcards.pat}#g" CF_config_control.txt > CF/config_{wildcards.pat}.txt
         freec -conf CF/config_{wildcards.pat}.txt -sample {input.BAM_T} -control {input.BAM_N}|| true
-        wc -l CF/{wildcards.pat}/{wildcards.pat}_markdup.bam_CNVs > {output.number} || true
-        touch CF/{wildcards.pat}/{wildcards.pat}_markdup.bam_ratio.txt
-        touch CF/{wildcards.pat}/{wildcards.pat}_markdup.bam_CNVs
+        wc -l CF/{wildcards.pat}/{wildcards.pat}_DNA_markdup.bam_CNVs > {output.number} || true
+        touch CF/{wildcards.pat}/{wildcards.pat}_DNA_markdup.bam_ratio.txt
+        touch CF/{wildcards.pat}/{wildcards.pat}_DNA_markdup.bam_CNVs
         """
 
 
 rule CONTROL_FREEC_stat:
     input:
-        ratio = "CF/{pat}/{pat}_markdup.bam_ratio.txt",
-        CNVs =  "CF/{pat}/{pat}_markdup.bam_CNVs",
+        ratio = "CF/{pat}/{pat}_DNA_markdup.bam_ratio.txt",
+        CNVs =  "CF/{pat}/{pat}_DNA_markdup.bam_CNVs",
         number = "CF/{pat}/number_of_cnvs_in_{pat}"
     output:
-        PV = "CF/{pat}/{pat}_markdup.bam_CNVs.p.value.txt",
-        PV_filtered = "CF/{pat}/{pat}_markdup.bam_CNVs.p.value.filtered.txt"
+        PV = "CF/{pat}/{pat}_DNA_markdup.bam_CNVs.p.value.txt",
+        PV_filtered = "CF/{pat}/{pat}_DNA_markdup.bam_CNVs.p.value.filtered.txt"
     resources: time_min = 50000, mem_mb=128000, cpus = 16
     shell:"""
         if [ `cat {input.CNVs} | wc -l` -gt 0 ] ; then
@@ -277,7 +277,7 @@ rule CONTROL_FREEC_stat:
 
 rule CONTROL_FREEC_plot:
     input:
-        PV_filtered = "CF/{pat}/{pat}_markdup.bam_CNVs.p.value.filtered.txt",
+        PV_filtered = "CF/{pat}/{pat}_DNA_markdup.bam_CNVs.p.value.filtered.txt",
     output:
         "CF/{pat}/plot_CNV_{pat}.pdf"
     resources: time_min = 50000, mem_mb=128000, cpus = 16
@@ -299,8 +299,8 @@ rule CONTROL_FREEC_plot:
 
 rule CONTROL_FREEC_plot_flat_logratio:
     input:
-        PV_filtered = "CF/{pat}/{pat}_markdup.bam_CNVs.p.value.filtered.txt",
-        ratio = "CF/{pat}/{pat}_markdup.bam_ratio.txt"
+        PV_filtered = "CF/{pat}/{pat}_DNA_markdup.bam_CNVs.p.value.filtered.txt",
+        ratio = "CF/{pat}/{pat}_DNA_markdup.bam_ratio.txt"
     output:
         "CF/{pat}/plot_CNV_flat_logratio_{pat}.pdf"
     resources: time_min = 50000, mem_mb=128000, cpus = 16

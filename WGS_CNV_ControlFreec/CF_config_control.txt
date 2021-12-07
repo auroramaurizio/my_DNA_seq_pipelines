@@ -8,7 +8,7 @@ coefficientOfVariation = 0.05
 BedGraphOutput=TRUE
 sambamba = sambamba
 SambambaThreads = 72
-chrFiles = /beegfs/datasets/buffer/ric.cosr/GRCh38_Verily_AM/GRCh38_Verily/bwa-0.7.12/chromosomes
+chrFiles = bwa-0.7.12/chromosomes
 outputDir = CF/CFdir
 degree=3&4
 minCNAlength = 1
@@ -36,14 +36,5 @@ inputFormat = BAM
 mateOrientation = FR
 
 #The parameters chrLenFile and ploidy are required. Either chrFiles or GCcontentProfile must be specified too if no control dataset is available. 
-
-
-[BAF]
-
-makePileup = dbSNP-151.bed
-SNPfile = chr_dbSNP-151.vcf
-minimalCoveragePerPosition=10
-minimalQualityPerPosition=20
-fastaFile=/beegfs/datasets/buffer/ric.cosr/GRCh38_Verily_AM/GRCh38_Verily/bwa-0.7.12/GRCh38_Verily_v1.genome.fa
 
 
