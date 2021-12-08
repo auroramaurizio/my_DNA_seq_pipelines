@@ -7,6 +7,10 @@ import csv
 import pandas as pd
 import numpy as np
 
+
+#run with snakemake --profile slurm --use-conda
+
+
 #import multiqc
 
 DATADIR_SHORT="FASTQ"
