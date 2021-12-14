@@ -1,0 +1,138 @@
+import sys
+import os
+import logging
+from snakemake.io import glob_wildcards, expand
+import csv
+import pandas as pd
+import numpy as np
+
+
+
+path = "logs_slurm"
+try:
+    os.mkdir(path)
+except OSError:
+    print ("Creation of the directory %s failed" % path)
+else:
+    print ("Successfully created the directory %s " % path)
+
+#absolute path of folder containing the .bam files
+DATADIR_SHORT="/beegfs/scratch/ric.cosr/ric.cosr/../markdup"
+
+
+#set of prefix of sample names 
+#P = set(["PTCL_0010","PTCL_0020","PTCL_0030"])
+
+P = set(["PTCL_0010"])
+
+PATIENT = ' '.join(map(str, P))
+
+print("PATIENT", PATIENT)
+
+
+rule all:
+    input:
+        expand(['CNVKIT_PLOTS/{base}-scatter-region.pdf'], base=PATIENT.split(' ')),
+        expand('CNVKIT_PLOTS/all_heatmap.pdf', base=PATIENT.split(' ')),
+        expand('CNVKIT_PLOTS/all_heatmap_region.pdf', base=PATIENT.split(' ')),
+        expand('CNVKIT_PLOTS/{base}-diagram.pdf', base=PATIENT.split(' ')),
+        expand('CNVKIT_PLOTS/{base}-density.pdf', base=PATIENT.split(' ')),
+        expand('CNVKIT_PLOTS/{base}-scatter.pdf', base=PATIENT.split(' '))
+      
+
+
+
+
+rule cnvkit_batch:
+    input:
+        BAM_TUMOR = os.path.join(DATADIR_SHORT, "{base}_DNA_markdup_only_marked.bam"),
+        BAM_NORMAL = os.path.join(DATADIR_SHORT, "{base}_NORM_DNA_markdup_only_marked.bam")
+    output:
+        "{base}.CNVKIT/{base}_DNA_markdup_only_marked.cns",
+        "{base}.CNVKIT/{base}_DNA_markdup_only_marked.cnr"
+    resources: time_min=5000, mem_mb=48000, cpus=18
+    params:
+        FOLDER="{base}.CNVKIT",
+        REFERENCE = "GRCh38_Verily_v1.genome.fa",
+        ref_flat = "hg38_refFlat.txt"
+    shell:
+        "cnvkit.py batch -m wgs -p 18 -f {params.REFERENCE} {input.BAM_TUMOR} -n {input.BAM_NORMAL} --output-dir {params.FOLDER} --annotate {params.ref_flat}"
+   
+
+
+
+rule cnvkit_scatter:
+    input:
+        CNR="{base}.CNVKIT/{base}_DNA_markdup_only_marked.cnr",
+        CNS="{base}.CNVKIT/{base}_DNA_markdup_only_marked.cns"
+    output:
+        "CNVKIT_PLOTS/{base}-scatter.pdf"
+    resources: time_min=5000, mem_mb=48000, cpus=18
+    params:
+        "{base}-sting.CNVKIT/{base}.cns"
+    shell:
+        "cnvkit.py scatter {input.CNR} -s {input.CNS} -o {output}"
+
+
+rule cnvkit_scatter_region:
+    input:
+        CNR="{base}.CNVKIT/{base}_DNA_markdup_only_marked.cnr",
+        CNS="{base}.CNVKIT/{base}_DNA_markdup_only_marked.cns"
+    output:
+        "CNVKIT_PLOTS/{base}-scatter-region.pdf"
+    resources: time_min=5000, mem_mb=48000, cpus=18
+    shell:
+        "cnvkit.py scatter {input.CNR} -s {input.CNS} -c chr7 -g gene,EGFR,BRAF,EZH2,RAC1,HDAC9,CDK6 --y-max 5 --y-min -3 -o {output}"
+
+
+rule cnvkit_diagram:
+    input:
+        CNR="{base}.CNVKIT/{base}_DNA_markdup_only_marked.cnr",
+        CNS="{base}.CNVKIT/{base}_DNA_markdup_only_marked.cns"
+    output:
+        "CNVKIT_PLOTS/{base}-diagram.pdf"
+    resources: time_min=5000, mem_mb=48000, cpus=18
+    shell:
+        "cnvkit.py diagram {input.CNR} -s {input.CNS} -o {output}"
+
+
+rule cnvkit_density:
+    input:
+        CNS="{base}.CNVKIT/{base}_DNA_markdup_only_marked.cns"
+    output:
+        PLOT="CNVKIT_PLOTS/{base}-density.pdf"
+    resources: time_min=5000, mem_mb=48000, cpus=18
+    run:
+        import matplotlib.pyplot as plt
+        TAS=pd.read_csv(input.CNS, sep='\t', header=(0))
+        TAS['length']=TAS['end'] - TAS['start']
+        print(len(TAS['length']))
+        plt.hist(TAS['length'], color='steelblue',
+                    edgecolor='none')
+        plt.ticklabel_format(useOffset=False, style='plain')
+        plt.xlabel('CNV width (bp)')
+        plt.xticks(fontsize=6)
+        plt.title('CNV width distribution')
+        plt.savefig(output.PLOT)
+
+
+rule cnvkit_heatmap:
+    input:
+        expand(["{base}.CNVKIT/{base}_DNA_markdup_only_marked.cns"], base=PATIENT.split(' '))
+    output:
+        "CNVKIT_PLOTS/all_heatmap.pdf"
+    resources: time_min=5000, mem_mb=48000, cpus=18
+    shell:
+        "cnvkit.py heatmap {input} -o {output}"
+
+
+rule cnvkit_heatmap_region:
+    input:
+        expand(["{base}.CNVKIT/{base}_DNA_markdup_only_marked.cns", "{base}.CNVKIT/{base}_DNA_markdup_only_marked.cnr"], base=PATIENT.split(' '))
+    output:
+        "CNVKIT_PLOTS/all_heatmap_region.pdf"
+    resources: time_min=5000, mem_mb=48000, cpus=18
+    shell:
+        "cnvkit.py heatmap {input} -c chr7 -o {output}"
+
+
