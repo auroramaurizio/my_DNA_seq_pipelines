@@ -1,0 +1,12 @@
+##create directory
+#mkdir -p ~/.config/snakemake/slurm
+#create config file
+#vim ~/.config/snakemake/slurm/config.yaml
+
+jobs: 100
+
+cluster: "sbatch -p workq -t {resources.time_min} --mem={resources.mem_mb} -c {resources.cpus} -o logs_slurm/{rule}_{wildcards} -e logs_slurm/{rule}_{wildcards} --mail-type=FAIL --mail-user=maurizio.aurora@hsr.it"
+
+use-conda: true
+
+

@@ -202,3 +202,15 @@ rule cnvkit_heatmap_region:
         "cnvkit.py heatmap {input} -c chr7 -o {output}"
 
 
+
+Ciao Giovanni,
+
+Riguardo alla parte di pipeline sviluppata ti avevo risposto al commento sulle slide, ma non so se avevo colto in pieno il senso della tua domanda.
+
+
+
+
+Sì stiamo procedendo con l'analisi CNV anche su Lung.
+
+
+
