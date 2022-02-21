@@ -37,17 +37,45 @@ else:
 
 rule all:
     input:
-      expand(["{pref}_somatic_T_filtered.vcf.gz"], pref=SUFFIX.split(' '))
+      expand(["{pref}_somatic_T_filtered.vcf.gz"], pref=SUFFIX.split(' ')),
+            expand(["MAF/{pref}_somatic.filtered.COSMIC.funcotator.maf"], pref=SUFFIX.split(' ')),
 
 
-#############################################################################################
-# I alredy aligned the reads over the ref genome and marked the duplicate reads with Picard
-############################################################################################         
+g###########################################################################################################################
+# I alredy aligned the reads over the ref genome --merged the bam if necessary -- and marked the duplicate reads with Picard
+###########################################################################################################################         
+
+###################################
+# Some statistics
+###################################
+
+rule HsMetrics:
+    input:
+      BAM = "sorted/{pref}_C_markdup_only_marked.bam"
+    output:
+      HsMetrics = "hsmetrics/{pref}_hs_metrics.txt"
+    params:
+      reference = "/beegfs/datasets/genomes/hg38/GATK_bundle_new/v0/Homo_sapiens_assembly38.fasta",
+      baits = "/beegfs/scratch/ric.cosr/ric.cosr/Menarini/210724_A00626_0314_BH3CYVDMXY/Twist_Exome_Target_hg38.interval_list"
+    resources: time_min = 50000, mem_mb=50000, cpus = 32
+    shell:"""
+    mkdir -p hsmetrics
+    picard CollectHsMetrics \
+      I={input.BAM} \
+      O={output.HsMetrics} \
+      R={params.reference} \
+      BAIT_INTERVALS={params.baits} \
+      TARGET_INTERVALS={params.baits}
+      """
+
+
+
+
+
 
 ###################################
 # Recalibration of T and C samples
 ###################################
-
 
 rule recalibC:
     input:
@@ -211,9 +239,9 @@ rule Tumor_matched_Normal:
         """
 
 
-################################
-# filter mutect calls
-################################
+#########################################
+# filter mutect calls - tag PASS variants
+#########################################
 
 
 rule Filter:
@@ -223,7 +251,7 @@ rule Filter:
     params:
         tmpdir = "/beegfs/scratch/tmp"
     output:
-        vcf = "{pref}_somatic_T_filtered.vcf.gz"
+        vcf = "{pref}_somatic_filtered.vcf.gz"
     resources: time_min=50000, mem_mb=128000, cpus=32
     shell:
         """
@@ -231,4 +259,94 @@ rule Filter:
         gatk FilterMutectCalls -R {input.genome} -V {input.tumor} -O {output.vcf} --tmp-dir {params.tmpdir}
         """
 
- 
+################################
+# annotate with cosmic
+################################
+
+
+rule Annotat_Cosmic_filtered:
+    input:
+        vcf = "CALL/{pref}_somatic.filtered.vcf.gz"
+    params:
+        cosmic = "CosmicCodingMuts.normal.vcf.gz"
+    output:
+        vcf = "COSMIC/{pref}_somatic.filtered.COSMIC.vcf"
+    resources: time_min=50000, mem_mb=128000, cpus=8
+    shell:
+        """
+        mkdir -p COSMIC
+        zcat {input.vcf}| SnpSift annotate  -info "COSMIC" {params.cosmic} > {output.vcf}
+        """
+
+
+
+
+################################
+# annotate with funcotator
+################################
+
+
+
+rule FuncotatorVCF:
+    input:
+        genome = "GRCh38_Verily/bwa-0.7.12/GRCh38_Verily_v1.genome.fa",
+        vcf = "COSMIC/{pref}_somatic.filtered.COSMIC.vcf"
+    params:
+        funcotator = "/beegfs/scratch/ric.cosr/ric.cosr/DellabonaP/funcotator_dataSources.v1.7.20200521s"
+    output:
+        vcf = "FUNCOTATOR/{pref}_somatic.filtered.COSMIC.funcotator.vcf.gz"
+    resources: time_min=50000, mem_mb=128000, cpus=16
+    shell:
+        """
+        mkdir -p FUNCOTATOR
+        export TILEDB_DISABLE_FILE_LOCKING=1
+        gatk Funcotator --variant {input.vcf} --reference {input.genome} --ref-version hg38 --data-sources-path {params.funcotator} --remove-filtered-variants --verbosity DEBUG --output {output.vcf} --output-file-format VCF
+        """
+
+
+###################################################
+# annotate with ensemble variant effector predictor
+###################################################
+
+
+rule VEP:
+    input:
+        genome = "GRCh38_Verily/bwa-0.7.12/GRCh38_Verily_v1.genome.fa",
+        vcf = "FUNCOTATOR/{pref}_somatic.filtered.COSMIC.funcotator.vcf"
+    output:
+        vep = "VEP/{pref}_somatic.filtered.COSMIC.funcotator.vep.vcf"
+    resources: time_min=50000, mem_mb=12800, cpus=1
+    shell:
+        """
+        bash -c '
+        . $HOME/.bashrc
+        conda activate pypette-dna-wes
+        mkdir -p VEP
+        vep --offline --cache -i {input.vcf} -o {output.vep} --dir_cache /beegfs/datasets/genomes/hg38/annotation/VEP-cache --hgvs --vcf --force_overwrite --fasta {input.genome}
+        conda deactivate'
+        """
+
+################################
+# create the maf
+################################
+
+
+
+rule MAF:
+    input:
+        genome = "GRCh38_Verily/bwa-0.7.12/GRCh38_Verily_v1.genome.fa",
+        vep = "VEP/{pref}_somatic.filtered.COSMIC.funcotator.vep.vcf"
+    output:
+        maf = "MAF/{pref}_somatic.filtered.COSMIC.funcotator.maf"
+    resources: time_min=50000, mem_mb=12800, cpus=1
+    shell:
+        """
+        bash -c '
+        . $HOME/.bashrc
+        conda activate pypette-dna-wes
+        mkdir -p MAF
+        vcf2maf.pl --input-vcf {input.vep} --output-maf {output.maf} --ref-fasta {input.genome} --tumor-id "{wildcards.sample}_OCT" --normal-id "{wildcards.sample}_PBMC" --ncbi-build GRCh38 --inhibit-vep --filter-vcf 0
+        conda deactivate'
+        """
+
+
