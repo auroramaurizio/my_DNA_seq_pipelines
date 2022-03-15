@@ -1,0 +1,274 @@
+import sys
+import logging
+from snakemake.io import glob_wildcards, expand
+import glob,os
+import pathlib
+import csv
+import pandas as pd
+import numpy as np
+
+
+path = "logs_slurm"
+try:
+    os.mkdir(path)
+except OSError:
+    print ("Creation of the directory %s failed" % path)
+else:
+    print ("Successfully created the directory %s " % path)
+
+
+
+DATADIR_SHORT = "/beegfs/scratch/demux/"
+runs_set = set(["220128_A00626_0403_BHL7GGDRXY"])
+runs = ' '.join(map(str, runs_set))
+
+
+project = set(["620_WES"])
+proj = ' '.join(map(str, project))
+
+
+DATADIR="/beegfs/scratch/ric.cosr/ric.cosr/runs/220128_A00626_0403_BHL7GGDRXY/620_WES"
+
+
+SAMPLE_LIST_DIR = os.listdir(DATADIR)
+
+
+SUFF = []
+
+
+for file in SAMPLE_LIST_DIR:
+    A = file
+    SUFF.append(A)
+
+
+SUFF=set(SUFF)
+
+print(SUFF)
+
+
+SUFFIX = ' '.join(map(str, SUFF))
+print("SUFFIX", SUFFIX)
+
+def get_rgidfromrun(run):
+    return str(run.split("_")[3])
+
+
+
+rule all:
+    input:
+      expand(["qc/{run}/{prj}/{pref}"], pref=SUFFIX.split(' '), prj=proj, run=runs.split(' ')),
+      expand(["qualimap/{pref}"], pref=SUFFIX.split(' ')),
+      expand(["hsmetrics/{pref}_hs_metrics.txt"], pref=SUFFIX.split(' '))
+
+
+
+rule mergeFastq:
+    output:
+        R1 = "MERGED_FQ/{run}/{prj}/{pref}_R1.fastq.gz",
+        R2 = "MERGED_FQ/{run}/{prj}/{pref}_R2.fastq.gz"
+    resources: time_min = 500, mem_mb=2500, cpus = 2
+    shell: """
+        mkdir -p MERGED_FQ
+            cat {DATADIR_SHORT}/{wildcards.run}/{wildcards.prj}/{wildcards.pref}/{wildcards.pref}_S*_R1_001.fastq.gz > {output.R1}
+            cat {DATADIR_SHORT}/{wildcards.run}/{wildcards.prj}/{wildcards.pref}/{wildcards.pref}_S*_R2_001.fastq.gz > {output.R2}
+        """
+
+
+rule fastqc:
+    input:
+        R1 = "trimmed/{run}/{prj}/{pref}_R1.fastq.gz",
+        R2 = "trimmed/{run}/{prj}/{pref}_R2.fastq.gz"
+    output:
+        directory("qc/{run}/{prj}/{pref}")
+    params: ""
+    log:
+        "logs/fastqc/{run}_{prj}_{pref}.log"
+    threads: 12
+    resources: time_min = 50000, mem_mb=25000, cpus = 18
+    shell:"""
+            mkdir -p "qc/{wildcards.run}/{wildcards.prj}/{wildcards.pref}"
+            fastqc -o {output} {input.R1} {input.R2}
+        """
+
+
+
+rule trimming:
+    input:
+        R1="MERGED_FQ/{run}/{prj}/{pref}_R1.fastq.gz",
+        R2="MERGED_FQ/{run}/{prj}/{pref}_R2.fastq.gz",
+        adapters = "adapters-pe.fa"
+    output:
+        R1="trimmed/{run}/{prj}/{pref}_R1.fastq.gz",
+        R2="trimmed/{run}/{prj}/{pref}_R2.fastq.gz"
+    log: 
+        main="trimmed/{run}/{prj}/{pref}_trim.log",
+        out="trimmed/{run}/{prj}/{pref}_trimout.log"
+    threads: 12
+    resources: time_min=50000, mem_mb=64000, cpus=32
+    shell:"""
+        mkdir -p trimmed
+        bbduk.sh -Xmx24g in={input.R1} in2={input.R2} out={output.R1} out2={output.R2} ref={input.adapters} k=23 mink=11 rcomp=t ktrim=f kmask=X qtrim=rl trimq=5 forcetrimleft=0 forcetrimright2=0  overwrite=true stats={log.main}  2> "{log.out}"
+
+       """
+
+
+
+
+
+rule map:
+    input:
+        R1="trimmed/{run}/{prj}/{pref}_R1.fastq.gz",
+        R2="trimmed/{run}/{prj}/{pref}_R2.fastq.gz",
+        reference="/beegfs/datasets/genomes/hg38/GATK_bundle_new/v0/Homo_sapiens_assembly38.fasta"
+    params:
+        id = lambda wildcards: get_rgidfromrun(f"{wildcards.run}"),
+        pu=lambda wildcards: f"{wildcards.run}.{wildcards.pref}",
+        sm=lambda wildcards: f"{wildcards.pref}",
+        pl="NextSeq500"
+        #lb = lambda wildcards:get_rgidfromrun(f"{wildcards.run}").f"{wildcards.pref}"
+    output:
+        "mapped/{run}/{prj}/{pref}.bam"
+    threads: 32
+    resources: time_min=50000, mem_mb=25000, cpus=32
+    shell:"""
+
+       bwa mem -t 72 -M -R '@RG\\tID:{params.id}.{params.sm}\\tPL:{params.pl}\\tPU:{params.pu}\\tSM:{params.sm}\\tLB:{params.id}.{params.sm}\\tCN:COSR\\tSO:unsorted' {input.reference} {input.R1} {input.R2} | samtools view -Sb > {output}
+
+       """
+
+
+rule samtools_sort_map:
+    input:
+        "mapped/{run}/{prj}/{pref}.bam"
+    output:
+        "sorted/{run}/{prj}/{pref}.bam"
+    resources: time_min = 5000, mem_mb=25000, cpus = 18
+    shell:"""
+        mkdir -p sorted
+        samtools sort {input} -o {output}
+        """
+
+
+rule samtools_merge:
+    input:
+        expand("sorted/{run}/{prj}/{{pref}}.bam",run=runs.split(' '), prj=proj, pref=SUFFIX.split(' '))
+    output:
+        "merged_bam/{pref}.bam"
+    resources: time_min = 5000, mem_mb=25000, cpus = 18
+    threads: 18
+    shell:"""
+        mkdir -p merged_bam
+        samtools merge -@ {threads} {output} {input}
+        """
+
+rule rmdup_only_marked:
+    input:
+        "merged_bam/{pref}.bam"
+    output:
+        reads = "markdup/{pref}_markdup.bam",
+        metrics = "markdup/{pref}_markdup_metrics.log"
+    resources: time_min=5000, mem_mb=2500, cpus=32
+    shell:"""
+       mkdir -p markdup
+       picard MarkDuplicates REMOVE_DUPLICATES=false\
+       I={input} \
+       O={output.reads} \
+       M={output.metrics}
+       """
+
+
+rule samtools_sort_marked:
+    input:
+        "markdup/{pref}_markdup.bam"
+    output:
+        "sorted/{pref}_markdup.bam"
+    resources: time_min = 5000, mem_mb=25000, cpus = 32
+    shell:"""
+        mkdir -p sorted
+        samtools sort {input} -o {output}
+        """
+
+
+rule samtools_index_only_marked:
+    input:
+        BAM = "sorted/{pref}_markdup.bam"
+    output:
+        "sorted/{pref}_markdup.bam.bai"
+    resources: time_min = 500, mem_mb=2500, cpus = 16
+    shell:"""
+        samtools index {input.BAM}
+        touch {output}
+        """
+         
+
+
+rule qualimap:
+    input:
+        "sorted/{pref}_markdup.bam"
+    params:
+        bed="Twist_Exome_RefSeq_targets_hg38.6fields.txt"
+    output:
+        directory("qualimap/{pref}")
+    resources: time_min = 50000, mem_mb=50000, cpus = 20
+    threads: 20
+    shell:"""
+        mkdir -p "qualimap/{wildcards.pref}"
+        qualimap --java-mem-size=50000M bamqc -nt {threads} -c -bam {input} -outdir {output} --feature-file {params.bed}
+        """
+
+
+#rule interval_list:
+#    input:
+#      #bed = "/beegfs/scratch/ric.cosr/ric.cosr/210724_A00626_0314_BH3CYVDMXY/Twist_Exome_Target_hg38.bed"
+#      bed = "/beegfs/datasets/buffer/ric.cosr/wes/Twist_Exome_RefSeq_targets_hg38.bed"
+#    output:
+#      #"/beegfs/scratch/ric.cosr/ric.cosr/210724_A00626_0314_BH3CYVDMXY/Twist_Exome_Target_hg38.interval_list"
+#      "/beegfs/datasets/buffer/ric.cosr/wes/Twist_Exome_RefSeq_targets_hg38.interval_list"
+#    resources: time_min = 50000, mem_mb=50000, cpus = 32
+#    shell:"""
+#      picard BedToIntervalList \
+#      I={input.bed} \
+#      O={output} \
+#      SD="/beegfs/datasets/genomes/hg38/GATK_bundle_new/v0/Homo_sapiens_assembly38.dict"
+#      """
+
+rule HsMetrics:
+    input:
+      BAM = "sorted/{pref}_markdup.bam"
+    output:
+      HsMetrics = "hsmetrics/{pref}_hs_metrics.txt"
+    params:
+      reference = "/beegfs/datasets/genomes/hg38/GATK_bundle_new/v0/Homo_sapiens_assembly38.fasta",
+      baits = "/beegfs/datasets/buffer/ric.cosr/wes/Twist_Exome_RefSeq_targets_hg38.interval_list"
+    resources: time_min = 50000, mem_mb=50000, cpus = 32
+    shell:"""
+    bash -c '
+    . $HOME/.bashrc
+    conda activate pypette-dna-wes   
+    mkdir -p hsmetrics
+    picard CollectHsMetrics \
+      I={input.BAM} \
+      O={output.HsMetrics} \
+      R={params.reference} \
+      BAIT_INTERVALS={params.baits} \
+      TARGET_INTERVALS={params.baits}
+    conda deactivate'
+      """
+
+
+
+rule MQC:
+    params:
+        qualimap = "qualimap/",
+        QC = "qc/",
+        PICARD = "markdup/",
+        HsMETRICS = "hsmetrics",
+    output: "MQC.done"
+    resources: time_min = 5000, mem_mb=12800, cpus = 16
+    shell:"""
+       multiqc {params.QC}  {params.qualimap} {params.HsMETRICS} {params.PICARD}
+       touch {output}
+       """
+
+
+
