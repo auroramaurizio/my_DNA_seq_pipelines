@@ -45,6 +45,22 @@ g###############################################################################
 # I alredy aligned the reads over the ref genome --merged the bam if necessary -- and marked the duplicate reads with Picard
 ###########################################################################################################################         
 
+
+rule interval_list:
+    input:
+      bed = "/beegfs/scratch/ric.cosr/ric.cosr/210724_A00626_0314_BH3CYVDMXY/Twist_Exome_Target_hg38.bed
+    output:
+      "/beegfs/scratch/ric.cosr/ric.cosr/210724_A00626_0314_BH3CYVDMXY/Twist_Exome_Target_hg38.interval_list
+    resources: time_min = 50000, mem_mb=50000, cpus = 32
+    shell:"""
+      picard BedToIntervalList \
+      I={input.bed} \
+      O={output} \
+      SD="/beegfs/datasets/genomes/hg38/GATK_bundle_new/v0/Homo_sapiens_assembly38.dict"
+      """
+
+
+
 ###################################
 # Some statistics
 ###################################
@@ -56,7 +72,7 @@ rule HsMetrics:
       HsMetrics = "hsmetrics/{pref}_hs_metrics.txt"
     params:
       reference = "/beegfs/datasets/genomes/hg38/GATK_bundle_new/v0/Homo_sapiens_assembly38.fasta",
-      baits = "/beegfs/scratch/ric.cosr/ric.cosr/Menarini/210724_A00626_0314_BH3CYVDMXY/Twist_Exome_Target_hg38.interval_list"
+      baits = "/beegfs/scratch/ric.cosr/ric.cosr/210724_A00626_0314_BH3CYVDMXY/Twist_Exome_Target_hg38.interval_list"
     resources: time_min = 50000, mem_mb=50000, cpus = 32
     shell:"""
     mkdir -p hsmetrics
