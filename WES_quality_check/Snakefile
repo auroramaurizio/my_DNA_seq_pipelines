@@ -149,6 +149,19 @@ rule samtools_sort_map:
         """
 
 
+
+#rule sort_map:
+#    input:
+#        "mapped/{run}/{prj}/{pref}.bam"
+#    output:
+#        "sorted/{run}/{prj}/{pref}.bam"
+#    resources: time_min = 5000, mem_mb=25000, cpus = 32
+#    threads: 32
+#    shell:"""
+#        mkdir -p sorted
+#        sambamba sort -t {threads} {input} -o {output}
+#        """
+
 rule samtools_merge:
     input:
         expand("sorted/{run}/{prj}/{{pref}}.bam",run=runs.split(' '), prj=proj, pref=SUFFIX.split(' '))
@@ -201,6 +214,50 @@ rule samtools_index_only_marked:
         """
          
 
+#as an alternative to samtools you can use sambamba
+
+#rule markdup:
+#    input:
+#        "merged_bam/{pref}.bam"
+#    output:
+#        reads = "markdup/{pref}_markdup.bam",
+#        metrics = "markdup/{pref}_markdup_metrics.log"
+#    resources: time_min=5000, mem_mb=25000, cpus=32
+#    threads: 32
+#    shell: """
+#       mkdir -p markdup
+#       sambamba markdup -t {threads} {input} {output.reads} >  {output.metrics} 2>&1
+#       """
+
+#rule samtools_sort_marked:
+#    input:
+#        "markdup/{pref}_markdup.bam"
+#    output:
+#        "sorted/{pref}_markdup.bam"
+#    resources: time_min = 5000, mem_mb=25000, cpus = 32
+#    threads: 32
+#    shell:"""
+#        mkdir -p sorted
+#        sambamba sort -t {threads} {input} -o {output}
+#        """
+
+
+#rule samtools_index_only_marked:
+#    input:
+#        BAM = "sorted/{pref}_markdup.bam"
+#    output:
+#        "sorted/{pref}_markdup.bam.bai"
+#    resources: time_min = 500, mem_mb=2500, cpus = 16
+#    threads: 16
+#    shell:"""
+#        sambamba index -t {threads} {input.BAM}
+#        touch {output}
+#        """
+
+
+
+
+#target bed file must contain at least 6 fields
 
 rule qualimap:
     input:
