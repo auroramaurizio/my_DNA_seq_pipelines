@@ -58,6 +58,7 @@ rule all:
     input:
       expand(["qc/{run}/{prj}/{pref}"], pref=SUFFIX.split(' '), prj=proj, run=runs.split(' ')),
       expand(["qualimap/{pref}"], pref=SUFFIX.split(' ')),
+      expand(["OxoG/{pref}_OxoG_metrics.txt"], pref=SUFFIX.split(' ')),
       expand(["hsmetrics/{pref}_hs_metrics.txt"], pref=SUFFIX.split(' '))
 
 
