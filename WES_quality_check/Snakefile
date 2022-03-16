@@ -254,7 +254,25 @@ rule samtools_index_only_marked:
 #        touch {output}
 #        """
 
-
+#Collect metrics to assess oxidative artifacts. useful for FFPE samples
+rule OxoG:
+    input:
+        "sorted/{pref}_markdup.bam"
+    params:
+        int="/beegfs/datasets/buffer/ric.cosr/wes/Twist_Exome_RefSeq_targets_hg38.interval_list",
+        reference="/beegfs/datasets/genomes/hg38/GATK_bundle_new/v0/Homo_sapiens_assembly38.fasta"
+    output:
+        "OxoG/{pref}_OxoG_metrics.txt"
+    resources: time_min = 50000, mem_mb=50000, cpus = 20
+    threads: 20
+    shell:"""
+        mkdir -p OxoG
+        picard CollectOxoGMetrics\
+        I={input} \
+        O={output} \
+        R={params.reference} \
+        INTERVALS={params.int}
+        """
 
 
 #target bed file must contain at least 6 fields
