@@ -40,7 +40,25 @@ rule all:
       expand(["{pref}_somatic_T_filtered.vcf.gz"], pref=SUFFIX.split(' ')),
             expand(["MAF/{pref}_somatic.filtered.COSMIC.funcotator.maf"], pref=SUFFIX.split(' ')),
 
-   
+
+g###########################################################################################################################
+# I alredy aligned the reads over the ref genome --merged the bam if necessary -- and marked the duplicate reads with Picard
+###########################################################################################################################         
+
+
+rule interval_list:
+    input:
+      bed = "/beegfs/scratch/ric.cosr/ric.cosr/210724_A00626_0314_BH3CYVDMXY/Twist_Exome_Target_hg38.bed
+    output:
+      "/beegfs/scratch/ric.cosr/ric.cosr/210724_A00626_0314_BH3CYVDMXY/Twist_Exome_Target_hg38.interval_list
+    resources: time_min = 50000, mem_mb=50000, cpus = 32
+    shell:"""
+      picard BedToIntervalList \
+      I={input.bed} \
+      O={output} \
+      SD="/beegfs/datasets/genomes/hg38/GATK_bundle_new/v0/Homo_sapiens_assembly38.dict"
+      """
+
 
 
 ###################################
@@ -54,13 +72,16 @@ rule HsMetrics:
       HsMetrics = "hsmetrics/{pref}_hs_metrics.txt"
     params:
       reference = "/beegfs/datasets/genomes/hg38/GATK_bundle_new/v0/Homo_sapiens_assembly38.fasta",
+      baits = "/beegfs/scratch/ric.cosr/ric.cosr/210724_A00626_0314_BH3CYVDMXY/Twist_Exome_Target_hg38.interval_list"
     resources: time_min = 50000, mem_mb=50000, cpus = 32
     shell:"""
     mkdir -p hsmetrics
     picard CollectHsMetrics \
       I={input.BAM} \
       O={output.HsMetrics} \
-      R={params.reference} 
+      R={params.reference} \
+      BAIT_INTERVALS={params.baits} \
+      TARGET_INTERVALS={params.baits}
       """
 
 
@@ -165,12 +186,14 @@ rule GatkMutect2:
 #        F = ["BQSR/6.vcf"],
 #        G = ["BQSR/7.vcf"],
 #        ref_fasta = "GRCh38_Verily/bwa-0.7.12/GRCh38_Verily_v1.genome.fa"
+#    params:
+#        baits = "Twist_Exome_Target_hg38.bed"
 #    output:
 #        db = directory("pon_dbs")
 #    resources: time_min=50000, mem_mb=128000, cpus=32
 #    shell:
 #        """
-#        gatk GenomicsDBImport -R {input.ref_fasta} -V {input.A} -V {input.B} -V {input.C} -V {input.D} -V {input.E} -V {input.F} -V {input.G} --genomicsdb-workspace-path {output.db}
+#        gatk GenomicsDBImport -R {input.ref_fasta} -V {input.A} -V {input.B} -V {input.C} -V {input.D} -V {input.E} -V {input.F} -V {input.G} -L {params.baits} --genomicsdb-workspace-path {output.db}
 #        touch {output.db} --merge-input-intervals
 #        """
 
@@ -181,13 +204,14 @@ rule genomics_db_import:
         samplenamemap = "cohort.sample_map",
         ref_fasta = "GRCh38_Verily/bwa-0.7.12/GRCh38_Verily_v1.genome.fa"
     params:
+        baits = "Twist_Exome_Target_hg38.bed",
         tmpdir = "/beegfs/scratch/tmp" 
     output:
         db = directory("pon_dbs")
     resources: time_min=50000, mem_mb=128000, cpus=7
     shell:
         """
-        gatk GenomicsDBImport -R {input.ref_fasta} --sample-name-map {input.samplenamemap} --genomicsdb-workspace-path {output.db} --merge-input-intervals --reader-threads 7 --tmp-dir {params.tmpdir}
+        gatk GenomicsDBImport -R {input.ref_fasta} --sample-name-map {input.samplenamemap} -L {params.baits} --genomicsdb-workspace-path {output.db} --merge-input-intervals --reader-threads 7 --tmp-dir {params.tmpdir}
         touch {output.db}
         """
 
@@ -340,5 +364,4 @@ rule MAF:
         vcf2maf.pl --input-vcf {input.vep} --output-maf {output.maf} --ref-fasta {input.genome} --tumor-id "{wildcards.sample}_OCT" --normal-id "{wildcards.sample}_PBMC" --ncbi-build GRCh38 --inhibit-vep --filter-vcf 0
         conda deactivate'
         """
-
 
