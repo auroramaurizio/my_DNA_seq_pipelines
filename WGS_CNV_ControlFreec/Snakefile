@@ -58,7 +58,8 @@ rule all:
         #expand(["MERGED/{pref}_R1.fastq.gz","MERGED/{pref}_R2.fastq.gz"], pref=SUFFIX.split(' ')),
         #expand(["sorted/{pref}_markdup_only_marked.bam"], pref=SUFFIX.split(' ')),
         expand(["CF/{pat}/plot_CNV_flat_logratio_{pat}.pdf"], pat=PATIENT.split(' ')),
-        expand(["CF/{pat}/plot_CNV_{pat}.pdf"], pat=PATIENT.split(' '))
+        expand(["CF/{pat}/plot_CNV_{pat}.pdf"], pat=PATIENT.split(' ')),
+        expand(["CF/{pref}/plot_Lc_{pref}.pdf"], pref=SUFFIX.split(' '))
 
 
 
@@ -322,6 +323,29 @@ rule CONTROL_FREEC_plot_flat_logratio:
         fi
         conda deactivate'
         """
+
+
+
+rule Gini:
+    input:
+        PV_filtered = "CF/{pref}/{pref}_markdup.bam_sample.cpn",
+    output:
+        plot = "CF/{pref}/plot_Lc_{pref}.pdf",
+        file = "CF/{pref}/gini_{pref}.txt"
+    resources: time_min = 50000, mem_mb=128000, cpus = 16
+    shell:"""
+        bash -c '
+        . $HOME/.bashrc
+        conda activate PLOT
+            touch {output.plot}
+            touch {output.file}
+            cat /beegfs/scratch/ric.cosr/ric.cosr/Menarini/gini.R | R --slave --args {input.PV_filtered} {output.plot} {output.file} {wildcards.pref}
+        conda deactivate'
+        """
+
+
+
+
 
 rule MQC:
     params:
