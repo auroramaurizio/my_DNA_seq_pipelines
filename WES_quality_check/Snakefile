@@ -75,6 +75,50 @@ rule mergeFastq:
         """
 
 
+
+
+
+# merge in unique folder sample fastqs from different runs
+#rule all:
+#    input:
+#      expand(["MERGED/{pref}_R1.fastq.gz"], pref=SUFFIX.split(' ')),
+#      expand(["MERGED/{pref}_R2.fastq.gz"], pref=SUFFIX.split(' '))
+
+
+
+
+#rule merge_R1:
+#    output:
+#        "MERGED/{pref}_R1.fastq.gz"
+#    resources: time_min = 5000, mem_mb=25000, cpus = 32
+#    threads: 32
+#    shell:"""
+#        array=()
+#        array=$(find MERGED_FQ -name "{wildcards.pref}_R1.fastq.gz")
+#        echo $array
+#
+#        cat $array > {output}
+#        """
+
+
+
+#rule merge_R2:
+#    output:
+#        "MERGED/{pref}_R2.fastq.gz"
+#    resources: time_min = 5000, mem_mb=25000, cpus = 32
+#    threads: 32
+#    shell:"""
+#        array=()
+#        array=$(find MERGED_FQ -name "{wildcards.pref}_R2.fastq.gz")
+#        echo $array
+#
+#        cat $array > {output}
+#        """
+
+
+
+
+
 rule fastqc:
     input:
         R1 = "trimmed/{run}/{prj}/{pref}_R1.fastq.gz",
