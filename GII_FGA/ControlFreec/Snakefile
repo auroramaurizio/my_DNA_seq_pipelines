@@ -1,0 +1,100 @@
+import sys
+import logging
+from snakemake.io import glob_wildcards, expand
+import glob,os
+import pathlib
+import csv
+import pandas as pd
+import numpy as np
+
+#import multiqc
+
+DATADIR_SHORT="/beegfs/scratch/ric.cosr/ric.cosr/prj/CF/GII/"
+
+DATADIR_NAME="/beegfs/scratch/ric.cosr/ric.cosr/prj/NAME/"
+SAMPLE_LIST_DIR = os.listdir(DATADIR_SHORT)
+
+print("SAMPLE_LIST_DIR", SAMPLE_LIST_DIR)
+
+
+SUFFIX = []
+SAMPLELIST = []
+for file in SAMPLE_LIST_DIR:
+    A = file.split("_")[0]
+    print(A)
+    B = file.split("_")[1]
+    print(B)
+    C = A + '_' + B
+    SUFFIX.append(C)
+SUFFIX = ' '.join(map(str, SUFFIX))
+
+print("SUFFIX", SUFFIX)
+
+
+
+SAMPLELIST = []
+for file in SAMPLE_LIST_DIR:
+    SAMPLELIST.append(file.split("_")[0])
+
+SAMPLELIST=set(SAMPLELIST)
+
+
+PATIENTS = ' '.join(map(str, SAMPLELIST))
+
+print("PATIENTS",PATIENTS)
+
+path = "logs_slurm"
+try:
+
+    os.mkdir(path)
+except OSError:
+    print ("Creation of the directory %s failed" % path)
+else:
+    print ("Successfully created the directory %s " % path)
+
+
+
+rule all:
+    input:
+        expand([DATADIR_NAME+"{pref}_markdup.bam_CNVs.p.value.filtered_name.txt"], pref=SUFFIX.split(' ')),
+        "summary.tsv" 
+
+
+
+
+rule add_name:
+    input:
+        PV_filtered = DATADIR_SHORT+"{pref}_YES/{pref}_markdup.bam_CNVs.p.value.filtered.txt",
+    output:
+        DATADIR_NAME+"{pref}_markdup.bam_CNVs.p.value.filtered_name.txt"
+    resources: time_min = 50000, mem_mb=128000, cpus = 16
+    shell:"""
+        mkdir -p NAME
+        bash -c '
+        . $HOME/.bashrc
+        conda activate PLOT
+        cat /beegfs/scratch/ric.cosr/ric.cosr/Menarini/add_sample_name.R | R --slave --args {input.PV_filtered} {output} {wildcards.pref}
+        conda deactivate'
+        """
+
+rule summary:
+    input:
+        expand([DATADIR_NAME+"{pref}_markdup.bam_CNVs.p.value.filtered_name.txt"], pref=SUFFIX.split(' '))
+    output:
+        "summary.tsv"
+    resources: time_min = 50000, mem_mb=12800, cpus = 16
+    run:
+        frames=[]
+        for file in input:
+            print("file in input", file)
+            if file:
+                frames.append(pd.read_csv(file, sep='\t', header=(0), engine='python'))
+            else:
+                print("file is missing", file)
+        result = pd.concat(frames)
+        #result.columns = ["CNVchr","CNVstart","CNVend","copy_number","status", "WilcoxonRankSumTestPvalue","KolmogorovSmirnovPvalue"]
+        #result[result["CNVchr"].str.contains("X|Y")==False]
+        print(result.head())
+        result.to_csv(output[0], sep='\t', index=False)
+
+
