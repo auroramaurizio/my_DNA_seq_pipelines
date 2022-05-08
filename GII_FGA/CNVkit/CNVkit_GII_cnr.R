@@ -1,7 +1,7 @@
 ###############################################################################
 # calculate the FGA - FRACTION OF GENOME ALTERED / GII GENOME INSTABILITY INDEX
 
-# from CNVkit data
+# from CNVkit output data 
 
 # according to method https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8308111/
 ###############################################################################
@@ -16,10 +16,10 @@ suppressMessages(library(openxlsx))
 list.files()
 ########
 
-ESOCA10_OCT = read.table("ESOCA10_OCT_markdup.cns", header = T)
-ESOCA17_OCT = read.table("ESOCA17_OCT_markdup.cns", header = T)
-ESOCA24T = read.table("ESOCA24T_markdup.cns", header = T)
-ESOCA29T = read.table("ESOCA29T_markdup.cns", header = T)
+ESOCA10_OCT = read.table("ESOCA10_OCT_markdup.cnr", header = T)
+ESOCA17_OCT = read.table("ESOCA17_OCT_markdup.cnr", header = T)
+ESOCA24T = read.table("ESOCA24T_markdup.cnr", header = T)
+ESOCA29T = read.table("ESOCA29T_markdup.cnr", header = T)
 
 
 dfList = list(
