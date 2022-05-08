@@ -14,13 +14,27 @@ DATADIR_SHORT="/../"
 
 #DATADIR_SHORT
 
+samplesheet = pd.read_table("/beegfs/scratch/ric.cosr/ric.cosr/ric.caravagna/CaravagnaG_1607_WGS/Merged/sarek/caravagnag_1607_wgs_6/recalibrated.tsv", header=None)
+
+samplesheet.columns =['pat', 'sex', 'con', 'pref','bam','bai']
+
+SAMP = samplesheet.pref
+
+SAMPLE = ' '.join(map(str, SAMP))
+
+print("SAMPLE",SAMPLE)
 
 
-SAMPLE_LIST_DIR = os.listdir(DATADIR_SHORT)"])
+
+SAMPLELIST = ["UPN02","UPN03","UPN04","UPN05","UPN06"]
+
+SUFF=set(SAMPLELIST)
+
+print("SUFF", SUFF)
 
 SUFFIX = ' '.join(map(str, SUFF))
 
-print("SUFFIX",SUFFIX)
+
 
 
 path = "logs_slurm"
@@ -32,30 +46,140 @@ except OSError:
 else:
     print ("Successfully created the directory %s " % path)
 
+# gatk IndexFeatureFile \
+#     -F /home/maurizio.aurora/my_Clean.vcf.gz
 
 rule all:
     input:
-      expand(["KASP/{pref}_KASP_T.vcf.gz"], pref=SUFFIX.split(' '))
+      expand(["KASP/{samp}_KASP.vcf.gz"], samp=SAMPLE.split(' '))
+      #expand(["{pref}_KASP_PRE_vs_PG.diff.sites_in_files"], pref=SUFFIX.split(' ')),
+      #expand(["{pref}_KASP_PRE_vs_DG.diff.sites_in_files"], pref=SUFFIX.split(' ')),
+      #expand(["{pref}_KASP_REL_vs_PG.diff.sites_in_files"], pref=SUFFIX.split(' ')),
+      #expand(["{pref}_KASP_REL_vs_DG.diff.sites_in_files"], pref=SUFFIX.split(' ')),
+      #expand(["{pref}_KASP_REL_vs_PRE.diff.sites_in_files"], pref=SUFFIX.split(' '))
+
 
 
 rule gatk__callLocation:
     input:
-        bam = "BQSR_T/{pref}_T_recal.bam",
-        ref_fasta = "/beegfs/datasets/buffer/ric.cosr/GRCh38_Verily_AM/GRCh38_Verily/bwa-0.7.12/GRCh38_Verily_v1.genome.fa",
-        Vlist =  "myClean.vcf"
+        bam = "/beegfs/scratch/ric.cosr/ric.cosr/ric.caravagna/CaravagnaG_1607_WGS/Merged/sarek/caravagnag_1607_wgs_6/results/Preprocessing/{samp}/Recalibrated/{samp}.recal.bam",
+        ref_fasta = "/beegfs/datasets/genomes/hg38/GATK_bundle_new/v0/Homo_sapiens_assembly38.fasta",
+        Vlist =  "/beegfs/scratch/ric.cosr/ric.cosr/Menarini/210724_A00626_0314_BH3CYVDMXY_mutect2/myClean.vcf"
     output:
-        vcfz = "KASP/{pref}_KASP_T.vcf.gz"
-    resources: name = "MMnGM_gatkCall", time_min=50000, mem_mb=48000, cpus=36
+        vcfz = "KASP/{samp}_KASP.vcf.gz"
+    resources: name = "MMnGM_gatkCall", time_min=50000, mem_mb=48000, cpus=10
     shell:
         """
         gatk HaplotypeCaller --java-options -Xmx30g \
          --input {input.bam} \
          --output {output.vcfz} \
          --reference {input.ref_fasta} \
-         -L {input.Vlist} -ip 100
+         -L {input.Vlist} -ip 10
+        """
+
+#PRE_vs_PG
+
+rule vcftools_PRE_vs_PG:
+    input:
+        vcf1 = "KASP/{pref}_PRE_KASP.vcf.gz",
+        vcf2 = "KASP/{pref}_PG_KASP.vcf.gz"
+    output:
+        vcfz = "{pref}_KASP_PRE_vs_PG.diff.sites_in_files"
+    resources: name = "vcftools", time_min=50000, mem_mb=48000, cpus=36
+    shell:
+        """
+        vcftools --gzvcf {input.vcf1} --gzdiff {input.vcf2} --diff-site --out {output}
         """
 
 
-#vcftools --gzvcf 1_KASP_T.vcf.gz --gzdiff 1_KASP_C.vcf.gz --diff-site --out 1_KASP_T_vs_1_KASP_C
+rule vcftools_PRE_vs_DG:
+    input:
+        vcf1 = "KASP/{pref}_PRE_KASP.vcf.gz",
+        vcf2 = "KASP/{pref}_DG_KASP.vcf.gz"
+    output:
+        vcfz = "{pref}_KASP_PRE_vs_DG.diff.sites_in_files"
+    resources: name = "vcftools", time_min=50000, mem_mb=48000, cpus=36
+    shell:
+        """
+        vcftools --gzvcf {input.vcf1} --gzdiff {input.vcf2} --diff-site --out {output}
+        """
 
+
+rule vcftools_REL_vs_PG:
+    input:
+        vcf1 = "KASP/{pref}_REL_KASP.vcf.gz",
+        vcf2 = "KASP/{pref}_PG_KASP.vcf.gz"
+    output:
+        vcfz = "{pref}_KASP_REL_vs_PG.diff.sites_in_files"
+    resources: name = "vcftools", time_min=50000, mem_mb=48000, cpus=36
+    shell:
+        """
+        vcftools --gzvcf {input.vcf1} --gzdiff {input.vcf2} --diff-site --out {output}
+        """
+
+
+
+rule vcftools_REL_vs_DG:
+    input:
+        vcf1 = "KASP/{pref}_REL_KASP.vcf.gz",
+        vcf2 = "KASP/{pref}_DG_KASP.vcf.gz"
+    output:
+        vcfz = "{pref}_KASP_REL_vs_DG.diff.sites_in_files"
+    resources: name = "vcftools", time_min=50000, mem_mb=48000, cpus=36
+    shell:
+        """
+        vcftools --gzvcf {input.vcf1} --gzdiff {input.vcf2} --diff-site --out {output}
+        """
+
+
+
+
+rule vcftools_REL_vs_PRE:
+    input:
+        vcf1 = "KASP/{pref}_REL_KASP.vcf.gz",
+        vcf2 = "KASP/{pref}_PRE_KASP.vcf.gz"
+    output:
+        vcfz = "{pref}_KASP_REL_vs_PRE.diff.sites_in_files"
+    resources: name = "vcftools", time_min=50000, mem_mb=48000, cpus=36
+    shell:
+        """
+        vcftools --gzvcf {input.vcf1} --gzdiff {input.vcf2} --diff-site --out {output}
+        """
+
+
+
+rule vcftools_DIA_vs_DG:
+    input:
+        vcf1 = "KASP/UPN04_DIA_KASP.vcf.gz",
+        vcf2 = "KASP/UPN04_DG_KASP.vcf.gz"
+    output:
+        vcfz = "UPN04_KASP_DIA_vs_DG.diff.sites_in_files"
+    resources: name = "vcftools", time_min=50000, mem_mb=48000, cpus=36
+    shell:
+        """
+        vcftools --gzvcf {input.vcf1} --gzdiff {input.vcf2} --diff-site --out {output}
+        """
+
+
+
+rule vcftools_DIA_vs_PG:
+    input:
+        vcf1 = "KASP/UPN04_DIA_KASP.vcf.gz",
+        vcf2 = "KASP/UPN04_PG_KASP.vcf.gz"
+    output:
+        vcfz = "UPN04_KASP_DIA_vs_PG.diff.sites_in_files"
+    resources: name = "vcftools", time_min=50000, mem_mb=48000, cpus=36
+    shell:
+        """
+        vcftools --gzvcf {input.vcf1} --gzdiff {input.vcf2} --diff-site --out {output}
+        """
+
+
+
+
+
+
+
+
+#vcftools --gzvcf 1_KASP_T.vcf.gz --gzdiff 1_KASP_C.vcf.gz --diff-site --out 1_KASP_T_vs_1_KASP_C
 
