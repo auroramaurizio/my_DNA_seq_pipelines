@@ -6,4 +6,5 @@ genotyping the samples for these 24 SNPs will help.
 
 If T and N (e.g. paracancerous tissue or blood) samples belong to the same individual we expect to see a 100% match in the KASP SNVs position.
 
-![Example of 3 matching SNPs in T and N samples](Pictures/KASP.png)
+![Example](Pictures/KASP.png)
+*Example of 3 matching SNPs in T and N samples*
