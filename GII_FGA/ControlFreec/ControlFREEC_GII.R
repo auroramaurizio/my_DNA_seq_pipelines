@@ -1,7 +1,7 @@
 ###############################################################################
 # calculate the FGA - FRACTION OF GENOME ALTERED / GII GENOME INSTABILITY INDEX
 
-# from ControlFREEC data
+# from ControlFREEC output data
 
 # according to method https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8308111/
 ###############################################################################
