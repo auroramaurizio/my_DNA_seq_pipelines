@@ -1,0 +1,547 @@
+##fileformat=VCFv4.0
+##INFO=<ID=RS,Number=1,Type=Integer,Description="dbSNP ID (i.e. rs number)">
+##INFO=<ID=RSPOS,Number=1,Type=Integer,Description="Chr position reported in dbSNP">
+##INFO=<ID=RV,Number=A,Type=Flag,Description="RS orientation is reversed">
+##INFO=<ID=VP,Number=1,Type=String,Description="Variation Property.  Documentation is at ftp://ftp.ncbi.nlm.nih.gov/snp/specs/dbSNP_BitField_latest.pdf">
+##INFO=<ID=GENEINFO,Number=1,Type=String,Description="Pairs each of gene symbol:gene id.  The gene symbol and id are delimited by a colon (:) and each pair is delimited by a vertical bar (|)">
+##INFO=<ID=dbSNPBuildID,Number=1,Type=Integer,Description="First dbSNP Build for RS">
+##INFO=<ID=SAO,Number=1,Type=Integer,Description="Variant Allele Origin: 0 - unspecified, 1 - Germline, 2 - Somatic, 3 - Both">
+##INFO=<ID=SSR,Number=1,Type=Integer,Description="Variant Suspect Reason Codes (may be more than one value added together) 0 - unspecified, 1 - Paralog, 2 - byEST, 4 - oldAlign, 8 - Para_EST, 16 - 1kg_failed, 1024 - other">
+##INFO=<ID=WGT,Number=1,Type=Integer,Description="Weight, 00 - unmapped, 1 - weight 1, 2 - weight 2, 3 - weight 3 or more">
+##INFO=<ID=VC,Number=1,Type=String,Description="Variation Class">
+##INFO=<ID=PM,Number=A,Type=Flag,Description="Variant is Precious(Clinical,Pubmed Cited)">
+##INFO=<ID=TPA,Number=A,Type=Flag,Description="Provisional Third Party Annotation(TPA) (currently rs from PHARMGKB who will give phenotype data)">
+##INFO=<ID=PMC,Number=A,Type=Flag,Description="Links exist to PubMed Central article">
+##INFO=<ID=S3D,Number=A,Type=Flag,Description="Has 3D structure - SNP3D table">
+##INFO=<ID=SLO,Number=A,Type=Flag,Description="Has SubmitterLinkOut - From SNP->SubSNP->Batch.link_out">
+##INFO=<ID=NSF,Number=A,Type=Flag,Description="Has non-synonymous frameshift A coding region variation where one allele in the set changes all downstream amino acids. FxnClass = 44">
+##INFO=<ID=NSM,Number=A,Type=Flag,Description="Has non-synonymous missense A coding region variation where one allele in the set changes protein peptide. FxnClass = 42">
+##INFO=<ID=NSN,Number=A,Type=Flag,Description="Has non-synonymous nonsense A coding region variation where one allele in the set changes to STOP codon (TER). FxnClass = 41">
+##INFO=<ID=REF,Number=A,Type=Flag,Description="Has reference A coding region variation where one allele in the set is identical to the reference sequence. FxnCode = 8">
+##INFO=<ID=SYN,Number=A,Type=Flag,Description="Has synonymous A coding region variation where one allele in the set does not change the encoded amino acid. FxnCode = 3">
+##INFO=<ID=U3,Number=A,Type=Flag,Description="In 3' UTR Location is in an untranslated region (UTR). FxnCode = 53">
+##INFO=<ID=U5,Number=A,Type=Flag,Description="In 5' UTR Location is in an untranslated region (UTR). FxnCode = 55">
+##INFO=<ID=ASS,Number=A,Type=Flag,Description="In acceptor splice site FxnCode = 73">
+##INFO=<ID=DSS,Number=A,Type=Flag,Description="In donor splice-site FxnCode = 75">
+##INFO=<ID=INT,Number=A,Type=Flag,Description="In Intron FxnCode = 6">
+##INFO=<ID=R3,Number=A,Type=Flag,Description="In 3' gene region FxnCode = 13">
+##INFO=<ID=R5,Number=A,Type=Flag,Description="In 5' gene region FxnCode = 15">
+##INFO=<ID=OTH,Number=A,Type=Flag,Description="Has other variant with exactly the same set of mapped positions on NCBI refernce assembly.">
+##INFO=<ID=CFL,Number=A,Type=Flag,Description="Has Assembly conflict. This is for weight 1 and 2 variant that maps to different chromosomes on different assemblies.">
+##INFO=<ID=ASP,Number=A,Type=Flag,Description="Is Assembly specific. This is set if the variant only maps to one assembly">
+##INFO=<ID=MUT,Number=A,Type=Flag,Description="Is mutation (journal citation, explicit fact): a low frequency variation that is cited in journal and other reputable sources">
+##INFO=<ID=VLD,Number=A,Type=Flag,Description="Is Validated.  This bit is set if the variant has 2+ minor allele count based on frequency or genotype data.">
+##INFO=<ID=G5A,Number=A,Type=Flag,Description=">5% minor allele frequency in each and all populations">
+##INFO=<ID=G5,Number=A,Type=Flag,Description=">5% minor allele frequency in 1+ populations">
+##INFO=<ID=HD,Number=A,Type=Flag,Description="Marker is on high density genotyping kit (50K density or greater).  The variant may have phenotype associations present in dbGaP.">
+##INFO=<ID=GNO,Number=A,Type=Flag,Description="Genotypes available. The variant has individual genotype (in SubInd table).">
+##INFO=<ID=KGValidated,Number=A,Type=Flag,Description="1000 Genome validated">
+##INFO=<ID=KGPhase1,Number=A,Type=Flag,Description="1000 Genome phase 1 (incl. June Interim phase 1)">
+##INFO=<ID=KGPilot123,Number=A,Type=Flag,Description="1000 Genome discovery all pilots 2010(1,2,3)">
+##INFO=<ID=KGPROD,Number=A,Type=Flag,Description="Has 1000 Genome submission">
+##INFO=<ID=OTHERKG,Number=A,Type=Flag,Description="non-1000 Genome submission">
+##INFO=<ID=PH3,Number=A,Type=String,Description="HAP_MAP Phase 3 genotyped: filtered, non-redundant">
+##INFO=<ID=CDA,Number=A,Type=Flag,Description="Variation is interrogated in a clinical diagnostic assay">
+##INFO=<ID=LSD,Number=A,Type=Flag,Description="Submitted from a locus-specific database">
+##INFO=<ID=MTP,Number=A,Type=Flag,Description="Microattribution/third-party annotation(TPA:GWAS,PAGE)">
+##INFO=<ID=OM,Number=A,Type=Flag,Description="Has OMIM/OMIA">
+##INFO=<ID=NOC,Number=A,Type=Flag,Description="Contig allele not present in variant allele list. The reference sequence allele at the mapped position is not present in the variant allele list, adjusted for orientation.">
+##INFO=<ID=WTD,Number=A,Type=Flag,Description="Is Withdrawn by submitter If one member ss is withdrawn by submitter, then this bit is set.  If all member ss' are withdrawn, then the rs is deleted to SNPHistory">
+##INFO=<ID=NOV,Number=A,Type=Flag,Description="Rs cluster has non-overlapping allele sets. True when rs set has more than 2 alleles from different submissions and these sets share no alleles in common.">
+##FILTER=<ID=NC,Description="Inconsistent Genotype Submission For At Least One Sample">
+##INFO=<ID=CAF,Number=.,Type=Float,Description="An ordered, comma delimited list of allele frequencies based on 1000Genomes, starting with the reference allele followed by alternate alleles as ordered in the ALT column. Where a 1000Genomes alternate allele is not in the dbSNPs alternate allele set, the allele is added to the ALT column.  The minor allele is the second largest value in the list, and was previuosly reported in VCF as the GMAF.  This is the GMAF reported on the RefSNP and EntrezSNP pages and VariationReporter">
+##INFO=<ID=COMMON,Number=1,Type=Integer,Description="RS is a common SNP.  A common SNP is one that has at least one 1000Genomes population with a minor allele of frequency >= 1% and for which 2 or more founders contribute to that minor allele frequency.">
+##INFO=<ID=CLNHGVS,Number=.,Type=String,Description="Variant names from HGVS.    The order of these variants corresponds to the order of the info in the other clinical  INFO tags.">
+##INFO=<ID=CLNALLE,Number=.,Type=Integer,Description="Variant alleles from REF or ALT columns.  0 is REF, 1 is the first ALT allele, etc.  This is used to match alleles with other corresponding clinical (CLN) INFO tags.  A value of -1 indicates that no allele was found to match a corresponding HGVS allele name.">
+##INFO=<ID=CLNSRC,Number=.,Type=String,Description="Variant Clinical Chanels">
+##INFO=<ID=CLNORIGIN,Number=.,Type=String,Description="Allele Origin. One or more of the following values may be added: 0 - unknown; 1 - germline; 2 - somatic; 4 - inherited; 8 - paternal; 16 - maternal; 32 - de-novo; 64 - biparental; 128 - uniparental; 256 - not-tested; 512 - tested-inconclusive; 1073741824 - other">
+##INFO=<ID=CLNSRCID,Number=.,Type=String,Description="Variant Clinical Channel IDs">
+##INFO=<ID=CLNSIG,Number=.,Type=String,Description="Variant Clinical Significance, 0 - unknown, 1 - untested, 2 - non-pathogenic, 3 - probable-non-pathogenic, 4 - probable-pathogenic, 5 - pathogenic, 6 - drug-response, 7 - histocompatibility, 255 - other">
+##INFO=<ID=CLNDSDB,Number=.,Type=String,Description="Variant disease database name">
+##INFO=<ID=CLNDSDBID,Number=.,Type=String,Description="Variant disease database ID">
+##INFO=<ID=CLNDBN,Number=.,Type=String,Description="Variant disease name">
+##INFO=<ID=CLNACC,Number=.,Type=String,Description="Variant Accession and Versions">
+##contig=<ID=1,length=248956422,assembly=hg38.fa>
+##contig=<ID=10,length=133797422,assembly=hg38.fa>
+##contig=<ID=10_GL383545v1_alt,length=179254,assembly=hg38.fa>
+##contig=<ID=10_GL383546v1_alt,length=309802,assembly=hg38.fa>
+##contig=<ID=10_KI270824v1_alt,length=181496,assembly=hg38.fa>
+##contig=<ID=10_KI270825v1_alt,length=188315,assembly=hg38.fa>
+##contig=<ID=11,length=135086622,assembly=hg38.fa>
+##contig=<ID=11_GL383547v1_alt,length=154407,assembly=hg38.fa>
+##contig=<ID=11_JH159136v1_alt,length=200998,assembly=hg38.fa>
+##contig=<ID=11_JH159137v1_alt,length=191409,assembly=hg38.fa>
+##contig=<ID=11_KI270721v1_random,length=100316,assembly=hg38.fa>
+##contig=<ID=11_KI270826v1_alt,length=186169,assembly=hg38.fa>
+##contig=<ID=11_KI270827v1_alt,length=67707,assembly=hg38.fa>
+##contig=<ID=11_KI270829v1_alt,length=204059,assembly=hg38.fa>
+##contig=<ID=11_KI270830v1_alt,length=177092,assembly=hg38.fa>
+##contig=<ID=11_KI270831v1_alt,length=296895,assembly=hg38.fa>
+##contig=<ID=11_KI270832v1_alt,length=210133,assembly=hg38.fa>
+##contig=<ID=11_KI270902v1_alt,length=106711,assembly=hg38.fa>
+##contig=<ID=11_KI270903v1_alt,length=214625,assembly=hg38.fa>
+##contig=<ID=11_KI270927v1_alt,length=218612,assembly=hg38.fa>
+##contig=<ID=12,length=133275309,assembly=hg38.fa>
+##contig=<ID=12_GL383549v1_alt,length=120804,assembly=hg38.fa>
+##contig=<ID=12_GL383550v2_alt,length=169178,assembly=hg38.fa>
+##contig=<ID=12_GL383551v1_alt,length=184319,assembly=hg38.fa>
+##contig=<ID=12_GL383552v1_alt,length=138655,assembly=hg38.fa>
+##contig=<ID=12_GL383553v2_alt,length=152874,assembly=hg38.fa>
+##contig=<ID=12_GL877875v1_alt,length=167313,assembly=hg38.fa>
+##contig=<ID=12_GL877876v1_alt,length=408271,assembly=hg38.fa>
+##contig=<ID=12_KI270833v1_alt,length=76061,assembly=hg38.fa>
+##contig=<ID=12_KI270834v1_alt,length=119498,assembly=hg38.fa>
+##contig=<ID=12_KI270835v1_alt,length=238139,assembly=hg38.fa>
+##contig=<ID=12_KI270836v1_alt,length=56134,assembly=hg38.fa>
+##contig=<ID=12_KI270837v1_alt,length=40090,assembly=hg38.fa>
+##contig=<ID=12_KI270904v1_alt,length=572349,assembly=hg38.fa>
+##contig=<ID=13,length=114364328,assembly=hg38.fa>
+##contig=<ID=13_KI270838v1_alt,length=306913,assembly=hg38.fa>
+##contig=<ID=13_KI270839v1_alt,length=180306,assembly=hg38.fa>
+##contig=<ID=13_KI270840v1_alt,length=191684,assembly=hg38.fa>
+##contig=<ID=13_KI270841v1_alt,length=169134,assembly=hg38.fa>
+##contig=<ID=13_KI270842v1_alt,length=37287,assembly=hg38.fa>
+##contig=<ID=13_KI270843v1_alt,length=103832,assembly=hg38.fa>
+##contig=<ID=14,length=107043718,assembly=hg38.fa>
+##contig=<ID=14_GL000009v2_random,length=201709,assembly=hg38.fa>
+##contig=<ID=14_GL000194v1_random,length=191469,assembly=hg38.fa>
+##contig=<ID=14_GL000225v1_random,length=211173,assembly=hg38.fa>
+##contig=<ID=14_KI270722v1_random,length=194050,assembly=hg38.fa>
+##contig=<ID=14_KI270723v1_random,length=38115,assembly=hg38.fa>
+##contig=<ID=14_KI270724v1_random,length=39555,assembly=hg38.fa>
+##contig=<ID=14_KI270725v1_random,length=172810,assembly=hg38.fa>
+##contig=<ID=14_KI270726v1_random,length=43739,assembly=hg38.fa>
+##contig=<ID=14_KI270844v1_alt,length=322166,assembly=hg38.fa>
+##contig=<ID=14_KI270845v1_alt,length=180703,assembly=hg38.fa>
+##contig=<ID=14_KI270846v1_alt,length=1351393,assembly=hg38.fa>
+##contig=<ID=14_KI270847v1_alt,length=1511111,assembly=hg38.fa>
+##contig=<ID=15,length=101991189,assembly=hg38.fa>
+##contig=<ID=15_GL383554v1_alt,length=296527,assembly=hg38.fa>
+##contig=<ID=15_GL383555v2_alt,length=388773,assembly=hg38.fa>
+##contig=<ID=15_KI270727v1_random,length=448248,assembly=hg38.fa>
+##contig=<ID=15_KI270848v1_alt,length=327382,assembly=hg38.fa>
+##contig=<ID=15_KI270849v1_alt,length=244917,assembly=hg38.fa>
+##contig=<ID=15_KI270850v1_alt,length=430880,assembly=hg38.fa>
+##contig=<ID=15_KI270851v1_alt,length=263054,assembly=hg38.fa>
+##contig=<ID=15_KI270852v1_alt,length=478999,assembly=hg38.fa>
+##contig=<ID=15_KI270905v1_alt,length=5161414,assembly=hg38.fa>
+##contig=<ID=15_KI270906v1_alt,length=196384,assembly=hg38.fa>
+##contig=<ID=16,length=90338345,assembly=hg38.fa>
+##contig=<ID=16_GL383556v1_alt,length=192462,assembly=hg38.fa>
+##contig=<ID=16_GL383557v1_alt,length=89672,assembly=hg38.fa>
+##contig=<ID=16_KI270728v1_random,length=1872759,assembly=hg38.fa>
+##contig=<ID=16_KI270853v1_alt,length=2659700,assembly=hg38.fa>
+##contig=<ID=16_KI270854v1_alt,length=134193,assembly=hg38.fa>
+##contig=<ID=16_KI270855v1_alt,length=232857,assembly=hg38.fa>
+##contig=<ID=16_KI270856v1_alt,length=63982,assembly=hg38.fa>
+##contig=<ID=17,length=83257441,assembly=hg38.fa>
+##contig=<ID=17_GL000205v2_random,length=185591,assembly=hg38.fa>
+##contig=<ID=17_GL000258v2_alt,length=1821992,assembly=hg38.fa>
+##contig=<ID=17_GL383563v3_alt,length=375691,assembly=hg38.fa>
+##contig=<ID=17_GL383564v2_alt,length=133151,assembly=hg38.fa>
+##contig=<ID=17_GL383565v1_alt,length=223995,assembly=hg38.fa>
+##contig=<ID=17_GL383566v1_alt,length=90219,assembly=hg38.fa>
+##contig=<ID=17_JH159146v1_alt,length=278131,assembly=hg38.fa>
+##contig=<ID=17_JH159147v1_alt,length=70345,assembly=hg38.fa>
+##contig=<ID=17_JH159148v1_alt,length=88070,assembly=hg38.fa>
+##contig=<ID=17_KI270729v1_random,length=280839,assembly=hg38.fa>
+##contig=<ID=17_KI270730v1_random,length=112551,assembly=hg38.fa>
+##contig=<ID=17_KI270857v1_alt,length=2877074,assembly=hg38.fa>
+##contig=<ID=17_KI270858v1_alt,length=235827,assembly=hg38.fa>
+##contig=<ID=17_KI270859v1_alt,length=108763,assembly=hg38.fa>
+##contig=<ID=17_KI270860v1_alt,length=178921,assembly=hg38.fa>
+##contig=<ID=17_KI270861v1_alt,length=196688,assembly=hg38.fa>
+##contig=<ID=17_KI270862v1_alt,length=391357,assembly=hg38.fa>
+##contig=<ID=17_KI270907v1_alt,length=137721,assembly=hg38.fa>
+##contig=<ID=17_KI270908v1_alt,length=1423190,assembly=hg38.fa>
+##contig=<ID=17_KI270909v1_alt,length=325800,assembly=hg38.fa>
+##contig=<ID=17_KI270910v1_alt,length=157099,assembly=hg38.fa>
+##contig=<ID=18,length=80373285,assembly=hg38.fa>
+##contig=<ID=18_GL383567v1_alt,length=289831,assembly=hg38.fa>
+##contig=<ID=18_GL383568v1_alt,length=104552,assembly=hg38.fa>
+##contig=<ID=18_GL383569v1_alt,length=167950,assembly=hg38.fa>
+##contig=<ID=18_GL383570v1_alt,length=164789,assembly=hg38.fa>
+##contig=<ID=18_GL383571v1_alt,length=198278,assembly=hg38.fa>
+##contig=<ID=18_GL383572v1_alt,length=159547,assembly=hg38.fa>
+##contig=<ID=18_KI270863v1_alt,length=167999,assembly=hg38.fa>
+##contig=<ID=18_KI270864v1_alt,length=111737,assembly=hg38.fa>
+##contig=<ID=18_KI270911v1_alt,length=157710,assembly=hg38.fa>
+##contig=<ID=18_KI270912v1_alt,length=174061,assembly=hg38.fa>
+##contig=<ID=19,length=58617616,assembly=hg38.fa>
+##contig=<ID=19_GL000209v2_alt,length=177381,assembly=hg38.fa>
+##contig=<ID=19_GL383573v1_alt,length=385657,assembly=hg38.fa>
+##contig=<ID=19_GL383574v1_alt,length=155864,assembly=hg38.fa>
+##contig=<ID=19_GL383575v2_alt,length=170222,assembly=hg38.fa>
+##contig=<ID=19_GL383576v1_alt,length=188024,assembly=hg38.fa>
+##contig=<ID=19_GL949746v1_alt,length=987716,assembly=hg38.fa>
+##contig=<ID=19_GL949747v2_alt,length=729520,assembly=hg38.fa>
+##contig=<ID=19_GL949748v2_alt,length=1064304,assembly=hg38.fa>
+##contig=<ID=19_GL949749v2_alt,length=1091841,assembly=hg38.fa>
+##contig=<ID=19_GL949750v2_alt,length=1066390,assembly=hg38.fa>
+##contig=<ID=19_GL949751v2_alt,length=1002683,assembly=hg38.fa>
+##contig=<ID=19_GL949752v1_alt,length=987100,assembly=hg38.fa>
+##contig=<ID=19_GL949753v2_alt,length=796479,assembly=hg38.fa>
+##contig=<ID=19_KI270865v1_alt,length=52969,assembly=hg38.fa>
+##contig=<ID=19_KI270866v1_alt,length=43156,assembly=hg38.fa>
+##contig=<ID=19_KI270867v1_alt,length=233762,assembly=hg38.fa>
+##contig=<ID=19_KI270868v1_alt,length=61734,assembly=hg38.fa>
+##contig=<ID=19_KI270882v1_alt,length=248807,assembly=hg38.fa>
+##contig=<ID=19_KI270883v1_alt,length=170399,assembly=hg38.fa>
+##contig=<ID=19_KI270884v1_alt,length=157053,assembly=hg38.fa>
+##contig=<ID=19_KI270885v1_alt,length=171027,assembly=hg38.fa>
+##contig=<ID=19_KI270886v1_alt,length=204239,assembly=hg38.fa>
+##contig=<ID=19_KI270887v1_alt,length=209512,assembly=hg38.fa>
+##contig=<ID=19_KI270888v1_alt,length=155532,assembly=hg38.fa>
+##contig=<ID=19_KI270889v1_alt,length=170698,assembly=hg38.fa>
+##contig=<ID=19_KI270890v1_alt,length=184499,assembly=hg38.fa>
+##contig=<ID=19_KI270891v1_alt,length=170680,assembly=hg38.fa>
+##contig=<ID=19_KI270914v1_alt,length=205194,assembly=hg38.fa>
+##contig=<ID=19_KI270915v1_alt,length=170665,assembly=hg38.fa>
+##contig=<ID=19_KI270916v1_alt,length=184516,assembly=hg38.fa>
+##contig=<ID=19_KI270917v1_alt,length=190932,assembly=hg38.fa>
+##contig=<ID=19_KI270918v1_alt,length=123111,assembly=hg38.fa>
+##contig=<ID=19_KI270919v1_alt,length=170701,assembly=hg38.fa>
+##contig=<ID=19_KI270920v1_alt,length=198005,assembly=hg38.fa>
+##contig=<ID=19_KI270921v1_alt,length=282224,assembly=hg38.fa>
+##contig=<ID=19_KI270922v1_alt,length=187935,assembly=hg38.fa>
+##contig=<ID=19_KI270923v1_alt,length=189352,assembly=hg38.fa>
+##contig=<ID=19_KI270929v1_alt,length=186203,assembly=hg38.fa>
+##contig=<ID=19_KI270930v1_alt,length=200773,assembly=hg38.fa>
+##contig=<ID=19_KI270931v1_alt,length=170148,assembly=hg38.fa>
+##contig=<ID=19_KI270932v1_alt,length=215732,assembly=hg38.fa>
+##contig=<ID=19_KI270933v1_alt,length=170537,assembly=hg38.fa>
+##contig=<ID=19_KI270938v1_alt,length=1066800,assembly=hg38.fa>
+##contig=<ID=1_GL383518v1_alt,length=182439,assembly=hg38.fa>
+##contig=<ID=1_GL383519v1_alt,length=110268,assembly=hg38.fa>
+##contig=<ID=1_GL383520v2_alt,length=366580,assembly=hg38.fa>
+##contig=<ID=1_KI270706v1_random,length=175055,assembly=hg38.fa>
+##contig=<ID=1_KI270707v1_random,length=32032,assembly=hg38.fa>
+##contig=<ID=1_KI270708v1_random,length=127682,assembly=hg38.fa>
+##contig=<ID=1_KI270709v1_random,length=66860,assembly=hg38.fa>
+##contig=<ID=1_KI270710v1_random,length=40176,assembly=hg38.fa>
+##contig=<ID=1_KI270711v1_random,length=42210,assembly=hg38.fa>
+##contig=<ID=1_KI270712v1_random,length=176043,assembly=hg38.fa>
+##contig=<ID=1_KI270713v1_random,length=40745,assembly=hg38.fa>
+##contig=<ID=1_KI270714v1_random,length=41717,assembly=hg38.fa>
+##contig=<ID=1_KI270759v1_alt,length=425601,assembly=hg38.fa>
+##contig=<ID=1_KI270760v1_alt,length=109528,assembly=hg38.fa>
+##contig=<ID=1_KI270761v1_alt,length=165834,assembly=hg38.fa>
+##contig=<ID=1_KI270762v1_alt,length=354444,assembly=hg38.fa>
+##contig=<ID=1_KI270763v1_alt,length=911658,assembly=hg38.fa>
+##contig=<ID=1_KI270764v1_alt,length=50258,assembly=hg38.fa>
+##contig=<ID=1_KI270765v1_alt,length=185285,assembly=hg38.fa>
+##contig=<ID=1_KI270766v1_alt,length=256271,assembly=hg38.fa>
+##contig=<ID=1_KI270892v1_alt,length=162212,assembly=hg38.fa>
+##contig=<ID=2,length=242193529,assembly=hg38.fa>
+##contig=<ID=20,length=64444167,assembly=hg38.fa>
+##contig=<ID=20_GL383577v2_alt,length=128386,assembly=hg38.fa>
+##contig=<ID=20_KI270869v1_alt,length=118774,assembly=hg38.fa>
+##contig=<ID=20_KI270870v1_alt,length=183433,assembly=hg38.fa>
+##contig=<ID=20_KI270871v1_alt,length=58661,assembly=hg38.fa>
+##contig=<ID=21,length=46709983,assembly=hg38.fa>
+##contig=<ID=21_GL383578v2_alt,length=63917,assembly=hg38.fa>
+##contig=<ID=21_GL383579v2_alt,length=201197,assembly=hg38.fa>
+##contig=<ID=21_GL383580v2_alt,length=74653,assembly=hg38.fa>
+##contig=<ID=21_GL383581v2_alt,length=116689,assembly=hg38.fa>
+##contig=<ID=21_KI270872v1_alt,length=82692,assembly=hg38.fa>
+##contig=<ID=21_KI270873v1_alt,length=143900,assembly=hg38.fa>
+##contig=<ID=21_KI270874v1_alt,length=166743,assembly=hg38.fa>
+##contig=<ID=22,length=50818468,assembly=hg38.fa>
+##contig=<ID=22_GL383582v2_alt,length=162811,assembly=hg38.fa>
+##contig=<ID=22_GL383583v2_alt,length=96924,assembly=hg38.fa>
+##contig=<ID=22_KB663609v1_alt,length=74013,assembly=hg38.fa>
+##contig=<ID=22_KI270731v1_random,length=150754,assembly=hg38.fa>
+##contig=<ID=22_KI270732v1_random,length=41543,assembly=hg38.fa>
+##contig=<ID=22_KI270733v1_random,length=179772,assembly=hg38.fa>
+##contig=<ID=22_KI270734v1_random,length=165050,assembly=hg38.fa>
+##contig=<ID=22_KI270735v1_random,length=42811,assembly=hg38.fa>
+##contig=<ID=22_KI270736v1_random,length=181920,assembly=hg38.fa>
+##contig=<ID=22_KI270737v1_random,length=103838,assembly=hg38.fa>
+##contig=<ID=22_KI270738v1_random,length=99375,assembly=hg38.fa>
+##contig=<ID=22_KI270739v1_random,length=73985,assembly=hg38.fa>
+##contig=<ID=22_KI270875v1_alt,length=259914,assembly=hg38.fa>
+##contig=<ID=22_KI270876v1_alt,length=263666,assembly=hg38.fa>
+##contig=<ID=22_KI270877v1_alt,length=101331,assembly=hg38.fa>
+##contig=<ID=22_KI270878v1_alt,length=186262,assembly=hg38.fa>
+##contig=<ID=22_KI270879v1_alt,length=304135,assembly=hg38.fa>
+##contig=<ID=22_KI270928v1_alt,length=176103,assembly=hg38.fa>
+##contig=<ID=2_GL383521v1_alt,length=143390,assembly=hg38.fa>
+##contig=<ID=2_GL383522v1_alt,length=123821,assembly=hg38.fa>
+##contig=<ID=2_GL582966v2_alt,length=96131,assembly=hg38.fa>
+##contig=<ID=2_KI270715v1_random,length=161471,assembly=hg38.fa>
+##contig=<ID=2_KI270716v1_random,length=153799,assembly=hg38.fa>
+##contig=<ID=2_KI270767v1_alt,length=161578,assembly=hg38.fa>
+##contig=<ID=2_KI270768v1_alt,length=110099,assembly=hg38.fa>
+##contig=<ID=2_KI270769v1_alt,length=120616,assembly=hg38.fa>
+##contig=<ID=2_KI270770v1_alt,length=136240,assembly=hg38.fa>
+##contig=<ID=2_KI270771v1_alt,length=110395,assembly=hg38.fa>
+##contig=<ID=2_KI270772v1_alt,length=133041,assembly=hg38.fa>
+##contig=<ID=2_KI270773v1_alt,length=70887,assembly=hg38.fa>
+##contig=<ID=2_KI270774v1_alt,length=223625,assembly=hg38.fa>
+##contig=<ID=2_KI270775v1_alt,length=138019,assembly=hg38.fa>
+##contig=<ID=2_KI270776v1_alt,length=174166,assembly=hg38.fa>
+##contig=<ID=2_KI270893v1_alt,length=161218,assembly=hg38.fa>
+##contig=<ID=2_KI270894v1_alt,length=214158,assembly=hg38.fa>
+##contig=<ID=3,length=198295559,assembly=hg38.fa>
+##contig=<ID=3_GL000221v1_random,length=155397,assembly=hg38.fa>
+##contig=<ID=3_GL383526v1_alt,length=180671,assembly=hg38.fa>
+##contig=<ID=3_JH636055v2_alt,length=173151,assembly=hg38.fa>
+##contig=<ID=3_KI270777v1_alt,length=173649,assembly=hg38.fa>
+##contig=<ID=3_KI270778v1_alt,length=248252,assembly=hg38.fa>
+##contig=<ID=3_KI270779v1_alt,length=205312,assembly=hg38.fa>
+##contig=<ID=3_KI270780v1_alt,length=224108,assembly=hg38.fa>
+##contig=<ID=3_KI270781v1_alt,length=113034,assembly=hg38.fa>
+##contig=<ID=3_KI270782v1_alt,length=162429,assembly=hg38.fa>
+##contig=<ID=3_KI270783v1_alt,length=109187,assembly=hg38.fa>
+##contig=<ID=3_KI270784v1_alt,length=184404,assembly=hg38.fa>
+##contig=<ID=3_KI270895v1_alt,length=162896,assembly=hg38.fa>
+##contig=<ID=3_KI270924v1_alt,length=166540,assembly=hg38.fa>
+##contig=<ID=3_KI270934v1_alt,length=163458,assembly=hg38.fa>
+##contig=<ID=3_KI270935v1_alt,length=197351,assembly=hg38.fa>
+##contig=<ID=3_KI270936v1_alt,length=164170,assembly=hg38.fa>
+##contig=<ID=3_KI270937v1_alt,length=165607,assembly=hg38.fa>
+##contig=<ID=4,length=190214555,assembly=hg38.fa>
+##contig=<ID=4_GL000008v2_random,length=209709,assembly=hg38.fa>
+##contig=<ID=4_GL000257v2_alt,length=586476,assembly=hg38.fa>
+##contig=<ID=4_GL383527v1_alt,length=164536,assembly=hg38.fa>
+##contig=<ID=4_GL383528v1_alt,length=376187,assembly=hg38.fa>
+##contig=<ID=4_KI270785v1_alt,length=119912,assembly=hg38.fa>
+##contig=<ID=4_KI270786v1_alt,length=244096,assembly=hg38.fa>
+##contig=<ID=4_KI270787v1_alt,length=111943,assembly=hg38.fa>
+##contig=<ID=4_KI270788v1_alt,length=158965,assembly=hg38.fa>
+##contig=<ID=4_KI270789v1_alt,length=205944,assembly=hg38.fa>
+##contig=<ID=4_KI270790v1_alt,length=220246,assembly=hg38.fa>
+##contig=<ID=4_KI270896v1_alt,length=378547,assembly=hg38.fa>
+##contig=<ID=4_KI270925v1_alt,length=555799,assembly=hg38.fa>
+##contig=<ID=5,length=181538259,assembly=hg38.fa>
+##contig=<ID=5_GL000208v1_random,length=92689,assembly=hg38.fa>
+##contig=<ID=5_GL339449v2_alt,length=1612928,assembly=hg38.fa>
+##contig=<ID=5_GL383530v1_alt,length=101241,assembly=hg38.fa>
+##contig=<ID=5_GL383531v1_alt,length=173459,assembly=hg38.fa>
+##contig=<ID=5_GL383532v1_alt,length=82728,assembly=hg38.fa>
+##contig=<ID=5_GL949742v1_alt,length=226852,assembly=hg38.fa>
+##contig=<ID=5_KI270791v1_alt,length=195710,assembly=hg38.fa>
+##contig=<ID=5_KI270792v1_alt,length=179043,assembly=hg38.fa>
+##contig=<ID=5_KI270793v1_alt,length=126136,assembly=hg38.fa>
+##contig=<ID=5_KI270794v1_alt,length=164558,assembly=hg38.fa>
+##contig=<ID=5_KI270795v1_alt,length=131892,assembly=hg38.fa>
+##contig=<ID=5_KI270796v1_alt,length=172708,assembly=hg38.fa>
+##contig=<ID=5_KI270897v1_alt,length=1144418,assembly=hg38.fa>
+##contig=<ID=5_KI270898v1_alt,length=130957,assembly=hg38.fa>
+##contig=<ID=6,length=170805979,assembly=hg38.fa>
+##contig=<ID=6_GL000250v2_alt,length=4672374,assembly=hg38.fa>
+##contig=<ID=6_GL000251v2_alt,length=4795265,assembly=hg38.fa>
+##contig=<ID=6_GL000252v2_alt,length=4604811,assembly=hg38.fa>
+##contig=<ID=6_GL000253v2_alt,length=4677643,assembly=hg38.fa>
+##contig=<ID=6_GL000254v2_alt,length=4827813,assembly=hg38.fa>
+##contig=<ID=6_GL000255v2_alt,length=4606388,assembly=hg38.fa>
+##contig=<ID=6_GL000256v2_alt,length=4929269,assembly=hg38.fa>
+##contig=<ID=6_GL383533v1_alt,length=124736,assembly=hg38.fa>
+##contig=<ID=6_KB021644v2_alt,length=185823,assembly=hg38.fa>
+##contig=<ID=6_KI270758v1_alt,length=76752,assembly=hg38.fa>
+##contig=<ID=6_KI270797v1_alt,length=197536,assembly=hg38.fa>
+##contig=<ID=6_KI270798v1_alt,length=271782,assembly=hg38.fa>
+##contig=<ID=6_KI270799v1_alt,length=152148,assembly=hg38.fa>
+##contig=<ID=6_KI270800v1_alt,length=175808,assembly=hg38.fa>
+##contig=<ID=6_KI270801v1_alt,length=870480,assembly=hg38.fa>
+##contig=<ID=6_KI270802v1_alt,length=75005,assembly=hg38.fa>
+##contig=<ID=7,length=159345973,assembly=hg38.fa>
+##contig=<ID=7_GL383534v2_alt,length=119183,assembly=hg38.fa>
+##contig=<ID=7_KI270803v1_alt,length=1111570,assembly=hg38.fa>
+##contig=<ID=7_KI270804v1_alt,length=157952,assembly=hg38.fa>
+##contig=<ID=7_KI270805v1_alt,length=209988,assembly=hg38.fa>
+##contig=<ID=7_KI270806v1_alt,length=158166,assembly=hg38.fa>
+##contig=<ID=7_KI270807v1_alt,length=126434,assembly=hg38.fa>
+##contig=<ID=7_KI270808v1_alt,length=271455,assembly=hg38.fa>
+##contig=<ID=7_KI270809v1_alt,length=209586,assembly=hg38.fa>
+##contig=<ID=7_KI270899v1_alt,length=190869,assembly=hg38.fa>
+##contig=<ID=8,length=145138636,assembly=hg38.fa>
+##contig=<ID=8_KI270810v1_alt,length=374415,assembly=hg38.fa>
+##contig=<ID=8_KI270811v1_alt,length=292436,assembly=hg38.fa>
+##contig=<ID=8_KI270812v1_alt,length=282736,assembly=hg38.fa>
+##contig=<ID=8_KI270813v1_alt,length=300230,assembly=hg38.fa>
+##contig=<ID=8_KI270814v1_alt,length=141812,assembly=hg38.fa>
+##contig=<ID=8_KI270815v1_alt,length=132244,assembly=hg38.fa>
+##contig=<ID=8_KI270816v1_alt,length=305841,assembly=hg38.fa>
+##contig=<ID=8_KI270817v1_alt,length=158983,assembly=hg38.fa>
+##contig=<ID=8_KI270818v1_alt,length=145606,assembly=hg38.fa>
+##contig=<ID=8_KI270819v1_alt,length=133535,assembly=hg38.fa>
+##contig=<ID=8_KI270820v1_alt,length=36640,assembly=hg38.fa>
+##contig=<ID=8_KI270821v1_alt,length=985506,assembly=hg38.fa>
+##contig=<ID=8_KI270822v1_alt,length=624492,assembly=hg38.fa>
+##contig=<ID=8_KI270900v1_alt,length=318687,assembly=hg38.fa>
+##contig=<ID=8_KI270901v1_alt,length=136959,assembly=hg38.fa>
+##contig=<ID=8_KI270926v1_alt,length=229282,assembly=hg38.fa>
+##contig=<ID=9,length=138394717,assembly=hg38.fa>
+##contig=<ID=9_GL383539v1_alt,length=162988,assembly=hg38.fa>
+##contig=<ID=9_GL383540v1_alt,length=71551,assembly=hg38.fa>
+##contig=<ID=9_GL383541v1_alt,length=171286,assembly=hg38.fa>
+##contig=<ID=9_GL383542v1_alt,length=60032,assembly=hg38.fa>
+##contig=<ID=9_KI270717v1_random,length=40062,assembly=hg38.fa>
+##contig=<ID=9_KI270718v1_random,length=38054,assembly=hg38.fa>
+##contig=<ID=9_KI270719v1_random,length=176845,assembly=hg38.fa>
+##contig=<ID=9_KI270720v1_random,length=39050,assembly=hg38.fa>
+##contig=<ID=9_KI270823v1_alt,length=439082,assembly=hg38.fa>
+##contig=<ID=M,length=16569,assembly=hg38.fa>
+##contig=<ID=Un_GL000195v1,length=182896,assembly=hg38.fa>
+##contig=<ID=Un_GL000213v1,length=164239,assembly=hg38.fa>
+##contig=<ID=Un_GL000214v1,length=137718,assembly=hg38.fa>
+##contig=<ID=Un_GL000216v2,length=176608,assembly=hg38.fa>
+##contig=<ID=Un_GL000218v1,length=161147,assembly=hg38.fa>
+##contig=<ID=Un_GL000219v1,length=179198,assembly=hg38.fa>
+##contig=<ID=Un_GL000220v1,length=161802,assembly=hg38.fa>
+##contig=<ID=Un_GL000224v1,length=179693,assembly=hg38.fa>
+##contig=<ID=Un_GL000226v1,length=15008,assembly=hg38.fa>
+##contig=<ID=Un_KI270302v1,length=2274,assembly=hg38.fa>
+##contig=<ID=Un_KI270303v1,length=1942,assembly=hg38.fa>
+##contig=<ID=Un_KI270304v1,length=2165,assembly=hg38.fa>
+##contig=<ID=Un_KI270305v1,length=1472,assembly=hg38.fa>
+##contig=<ID=Un_KI270310v1,length=1201,assembly=hg38.fa>
+##contig=<ID=Un_KI270311v1,length=12399,assembly=hg38.fa>
+##contig=<ID=Un_KI270312v1,length=998,assembly=hg38.fa>
+##contig=<ID=Un_KI270315v1,length=2276,assembly=hg38.fa>
+##contig=<ID=Un_KI270316v1,length=1444,assembly=hg38.fa>
+##contig=<ID=Un_KI270317v1,length=37690,assembly=hg38.fa>
+##contig=<ID=Un_KI270320v1,length=4416,assembly=hg38.fa>
+##contig=<ID=Un_KI270322v1,length=21476,assembly=hg38.fa>
+##contig=<ID=Un_KI270329v1,length=1040,assembly=hg38.fa>
+##contig=<ID=Un_KI270330v1,length=1652,assembly=hg38.fa>
+##contig=<ID=Un_KI270333v1,length=2699,assembly=hg38.fa>
+##contig=<ID=Un_KI270334v1,length=1368,assembly=hg38.fa>
+##contig=<ID=Un_KI270335v1,length=1048,assembly=hg38.fa>
+##contig=<ID=Un_KI270336v1,length=1026,assembly=hg38.fa>
+##contig=<ID=Un_KI270337v1,length=1121,assembly=hg38.fa>
+##contig=<ID=Un_KI270338v1,length=1428,assembly=hg38.fa>
+##contig=<ID=Un_KI270340v1,length=1428,assembly=hg38.fa>
+##contig=<ID=Un_KI270362v1,length=3530,assembly=hg38.fa>
+##contig=<ID=Un_KI270363v1,length=1803,assembly=hg38.fa>
+##contig=<ID=Un_KI270364v1,length=2855,assembly=hg38.fa>
+##contig=<ID=Un_KI270366v1,length=8320,assembly=hg38.fa>
+##contig=<ID=Un_KI270371v1,length=2805,assembly=hg38.fa>
+##contig=<ID=Un_KI270372v1,length=1650,assembly=hg38.fa>
+##contig=<ID=Un_KI270373v1,length=1451,assembly=hg38.fa>
+##contig=<ID=Un_KI270374v1,length=2656,assembly=hg38.fa>
+##contig=<ID=Un_KI270375v1,length=2378,assembly=hg38.fa>
+##contig=<ID=Un_KI270376v1,length=1136,assembly=hg38.fa>
+##contig=<ID=Un_KI270378v1,length=1048,assembly=hg38.fa>
+##contig=<ID=Un_KI270379v1,length=1045,assembly=hg38.fa>
+##contig=<ID=Un_KI270381v1,length=1930,assembly=hg38.fa>
+##contig=<ID=Un_KI270382v1,length=4215,assembly=hg38.fa>
+##contig=<ID=Un_KI270383v1,length=1750,assembly=hg38.fa>
+##contig=<ID=Un_KI270384v1,length=1658,assembly=hg38.fa>
+##contig=<ID=Un_KI270385v1,length=990,assembly=hg38.fa>
+##contig=<ID=Un_KI270386v1,length=1788,assembly=hg38.fa>
+##contig=<ID=Un_KI270387v1,length=1537,assembly=hg38.fa>
+##contig=<ID=Un_KI270388v1,length=1216,assembly=hg38.fa>
+##contig=<ID=Un_KI270389v1,length=1298,assembly=hg38.fa>
+##contig=<ID=Un_KI270390v1,length=2387,assembly=hg38.fa>
+##contig=<ID=Un_KI270391v1,length=1484,assembly=hg38.fa>
+##contig=<ID=Un_KI270392v1,length=971,assembly=hg38.fa>
+##contig=<ID=Un_KI270393v1,length=1308,assembly=hg38.fa>
+##contig=<ID=Un_KI270394v1,length=970,assembly=hg38.fa>
+##contig=<ID=Un_KI270395v1,length=1143,assembly=hg38.fa>
+##contig=<ID=Un_KI270396v1,length=1880,assembly=hg38.fa>
+##contig=<ID=Un_KI270411v1,length=2646,assembly=hg38.fa>
+##contig=<ID=Un_KI270412v1,length=1179,assembly=hg38.fa>
+##contig=<ID=Un_KI270414v1,length=2489,assembly=hg38.fa>
+##contig=<ID=Un_KI270417v1,length=2043,assembly=hg38.fa>
+##contig=<ID=Un_KI270418v1,length=2145,assembly=hg38.fa>
+##contig=<ID=Un_KI270419v1,length=1029,assembly=hg38.fa>
+##contig=<ID=Un_KI270420v1,length=2321,assembly=hg38.fa>
+##contig=<ID=Un_KI270422v1,length=1445,assembly=hg38.fa>
+##contig=<ID=Un_KI270423v1,length=981,assembly=hg38.fa>
+##contig=<ID=Un_KI270424v1,length=2140,assembly=hg38.fa>
+##contig=<ID=Un_KI270425v1,length=1884,assembly=hg38.fa>
+##contig=<ID=Un_KI270429v1,length=1361,assembly=hg38.fa>
+##contig=<ID=Un_KI270435v1,length=92983,assembly=hg38.fa>
+##contig=<ID=Un_KI270438v1,length=112505,assembly=hg38.fa>
+##contig=<ID=Un_KI270442v1,length=392061,assembly=hg38.fa>
+##contig=<ID=Un_KI270448v1,length=7992,assembly=hg38.fa>
+##contig=<ID=Un_KI270465v1,length=1774,assembly=hg38.fa>
+##contig=<ID=Un_KI270466v1,length=1233,assembly=hg38.fa>
+##contig=<ID=Un_KI270467v1,length=3920,assembly=hg38.fa>
+##contig=<ID=Un_KI270468v1,length=4055,assembly=hg38.fa>
+##contig=<ID=Un_KI270507v1,length=5353,assembly=hg38.fa>
+##contig=<ID=Un_KI270508v1,length=1951,assembly=hg38.fa>
+##contig=<ID=Un_KI270509v1,length=2318,assembly=hg38.fa>
+##contig=<ID=Un_KI270510v1,length=2415,assembly=hg38.fa>
+##contig=<ID=Un_KI270511v1,length=8127,assembly=hg38.fa>
+##contig=<ID=Un_KI270512v1,length=22689,assembly=hg38.fa>
+##contig=<ID=Un_KI270515v1,length=6361,assembly=hg38.fa>
+##contig=<ID=Un_KI270516v1,length=1300,assembly=hg38.fa>
+##contig=<ID=Un_KI270517v1,length=3253,assembly=hg38.fa>
+##contig=<ID=Un_KI270518v1,length=2186,assembly=hg38.fa>
+##contig=<ID=Un_KI270519v1,length=138126,assembly=hg38.fa>
+##contig=<ID=Un_KI270521v1,length=7642,assembly=hg38.fa>
+##contig=<ID=Un_KI270522v1,length=5674,assembly=hg38.fa>
+##contig=<ID=Un_KI270528v1,length=2983,assembly=hg38.fa>
+##contig=<ID=Un_KI270529v1,length=1899,assembly=hg38.fa>
+##contig=<ID=Un_KI270530v1,length=2168,assembly=hg38.fa>
+##contig=<ID=Un_KI270538v1,length=91309,assembly=hg38.fa>
+##contig=<ID=Un_KI270539v1,length=993,assembly=hg38.fa>
+##contig=<ID=Un_KI270544v1,length=1202,assembly=hg38.fa>
+##contig=<ID=Un_KI270548v1,length=1599,assembly=hg38.fa>
+##contig=<ID=Un_KI270579v1,length=31033,assembly=hg38.fa>
+##contig=<ID=Un_KI270580v1,length=1553,assembly=hg38.fa>
+##contig=<ID=Un_KI270581v1,length=7046,assembly=hg38.fa>
+##contig=<ID=Un_KI270582v1,length=6504,assembly=hg38.fa>
+##contig=<ID=Un_KI270583v1,length=1400,assembly=hg38.fa>
+##contig=<ID=Un_KI270584v1,length=4513,assembly=hg38.fa>
+##contig=<ID=Un_KI270587v1,length=2969,assembly=hg38.fa>
+##contig=<ID=Un_KI270588v1,length=6158,assembly=hg38.fa>
+##contig=<ID=Un_KI270589v1,length=44474,assembly=hg38.fa>
+##contig=<ID=Un_KI270590v1,length=4685,assembly=hg38.fa>
+##contig=<ID=Un_KI270591v1,length=5796,assembly=hg38.fa>
+##contig=<ID=Un_KI270593v1,length=3041,assembly=hg38.fa>
+##contig=<ID=Un_KI270741v1,length=157432,assembly=hg38.fa>
+##contig=<ID=Un_KI270742v1,length=186739,assembly=hg38.fa>
+##contig=<ID=Un_KI270743v1,length=210658,assembly=hg38.fa>
+##contig=<ID=Un_KI270744v1,length=168472,assembly=hg38.fa>
+##contig=<ID=Un_KI270745v1,length=41891,assembly=hg38.fa>
+##contig=<ID=Un_KI270746v1,length=66486,assembly=hg38.fa>
+##contig=<ID=Un_KI270747v1,length=198735,assembly=hg38.fa>
+##contig=<ID=Un_KI270748v1,length=93321,assembly=hg38.fa>
+##contig=<ID=Un_KI270749v1,length=158759,assembly=hg38.fa>
+##contig=<ID=Un_KI270750v1,length=148850,assembly=hg38.fa>
+##contig=<ID=Un_KI270751v1,length=150742,assembly=hg38.fa>
+##contig=<ID=Un_KI270752v1,length=27745,assembly=hg38.fa>
+##contig=<ID=Un_KI270753v1,length=62944,assembly=hg38.fa>
+##contig=<ID=Un_KI270754v1,length=40191,assembly=hg38.fa>
+##contig=<ID=Un_KI270755v1,length=36723,assembly=hg38.fa>
+##contig=<ID=Un_KI270756v1,length=79590,assembly=hg38.fa>
+##contig=<ID=Un_KI270757v1,length=71251,assembly=hg38.fa>
+##contig=<ID=X,length=156040895,assembly=hg38.fa>
+##contig=<ID=X_KI270880v1_alt,length=284869,assembly=hg38.fa>
+##contig=<ID=X_KI270881v1_alt,length=144206,assembly=hg38.fa>
+##contig=<ID=X_KI270913v1_alt,length=274009,assembly=hg38.fa>
+##contig=<ID=Y,length=57227415,assembly=hg38.fa>
+##contig=<ID=Y_KI270740v1_random,length=37240,assembly=hg38.fa>
+##liftOverProgram=CrossMap(https://sourceforge.net/projects/crossmap/)
+##liftOverFile=/lustre1/genomes/hg19/annotation/hg19ToHg38.over.chain
+##new_reference_genome=/lustre1/genomes/hg38/fa/hg38.fa
+##liftOverTime=October08,2020
+#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO
+chr1	67395837	rs2229546	C	A	.	.	RS=2229546;RSPOS=67861520;dbSNPBuildID=98;SSR=0;SAO=0;VP=0x05012880030117051f000101;WGT=1;VC=SNV;PM;PMC;SLO;REF;SYN;U3;VLD;G5A;G5;HD;GNO;KGPhase1;KGPilot123;KGPROD;OTHERKG;PH3;CAF=0.4481,0.5519;COMMON=1
+chr1	179551371	rs1410592	G	A	.	.	RS=1410592;RSPOS=179520506;dbSNPBuildID=88;SSR=0;SAO=0;VP=0x05030008030115051f000101;WGT=1;VC=SNV;S3D;SLO;REF;SYN;INT;VLD;G5;HD;GNO;KGPhase1;KGPilot123;KGPROD;OTHERKG;PH3;CAF=0.4252,0.5748;COMMON=1
+chr2	168932506	rs497692	T	C	.	.	RS=497692;RSPOS=169789016;RV;dbSNPBuildID=83;SSR=0;SAO=0;VP=0x05031000030117051f000100;WGT=1;VC=SNV;TPA;S3D;SLO;REF;SYN;VLD;G5A;G5;HD;GNO;KGPhase1;KGPilot123;KGPROD;OTHERKG;PH3;CAF=0.5216,0.4784;COMMON=1
+chr2	227032260	rs10203363	C	T	.	.	RS=10203363;RSPOS=227896976;dbSNPBuildID=119;SSR=0;SAO=0;VP=0x05010000030117051f000100;WGT=1;VC=SNV;SLO;REF;SYN;VLD;G5A;G5;HD;GNO;KGPhase1;KGPilot123;KGPROD;OTHERKG;PH3;CAF=0.55,0.45;COMMON=1
+chr3	4362083	rs2819561	A	G	.	.	RS=2819561;RSPOS=4403767;RV;dbSNPBuildID=100;SSR=0;SAO=0;VP=0x05010080000117051f000100;WGT=1;VC=SNV;SLO;U3;VLD;G5A;G5;HD;GNO;KGPhase1;KGPilot123;KGPROD;OTHERKG;PH3;CAF=0.3343,0.6657;COMMON=1
+chr4	5748177	rs4688963	T	C	.	.	RS=4688963;RSPOS=5749904;RV;dbSNPBuildID=111;SSR=0;SAO=0;VP=0x05012800030117051f000100;WGT=1;VC=SNV;PM;PMC;SLO;REF;SYN;VLD;G5A;G5;HD;GNO;KGPhase1;KGPilot123;KGPROD;OTHERKG;PH3;CAF=0.5349,0.4651;COMMON=1
+chr5	83538811	rs309557	T	C	.	.	RS=309557;RSPOS=82834630;RV;dbSNPBuildID=79;SSR=0;SAO=0;VP=0x05010008030117051f000100;WGT=1;VC=SNV;SLO;REF;SYN;INT;VLD;G5A;G5;HD;GNO;KGPhase1;KGPilot123;KGPROD;OTHERKG;PH3;CAF=0.5202,0.4798;COMMON=1
+chr6	146434004	rs2942	G	A	.	.	RS=2942;RSPOS=146755140;dbSNPBuildID=36;SSR=0;SAO=0;VP=0x05010080030117051f000100;WGT=1;VC=SNV;SLO;REF;SYN;U3;VLD;G5A;G5;HD;GNO;KGPhase1;KGPilot123;KGPROD;OTHERKG;PH3;CAF=0.4789,0.5211;COMMON=1
+chr7	48410560	rs17548783	T	C	.	.	RS=17548783;RSPOS=48450157;dbSNPBuildID=123;SSR=0;SAO=0;VP=0x05030000030117051f000101;WGT=1;VC=SNV;S3D;SLO;REF;SYN;VLD;G5A;G5;HD;GNO;KGPhase1;KGPilot123;KGPROD;OTHERKG;PH3;CAF=0.4812,0.5188;COMMON=1
+chr8	93923709	rs4735258	T	C	.	.	RS=4735258;RSPOS=94935937;dbSNPBuildID=111;SSR=0;SAO=0;VP=0x05010080000117051f000100;WGT=1;VC=SNV;SLO;U3;VLD;G5A;G5;HD;GNO;KGPhase1;KGPilot123;KGPROD;OTHERKG;PH3;CAF=0.4995,0.5005;COMMON=1
+chr9	97428498	rs1381532	A	G	.	.	RS=1381532;RSPOS=100190780;RV;dbSNPBuildID=88;SSR=0;SAO=0;VP=0x05030000030117051f000100;WGT=1;VC=SNV;S3D;SLO;REF;SYN;VLD;G5A;G5;HD;GNO;KGPhase1;KGPilot123;KGPROD;OTHERKG;PH3;CAF=0.433,0.567;COMMON=1
+chr10	98459557	rs10883099	G	A	.	.	RS=10883099;RSPOS=100219314;dbSNPBuildID=120;SSR=0;SAO=0;VP=0x05010080000117051f000100;WGT=1;VC=SNV;SLO;U3;VLD;G5A;G5;HD;GNO;KGPhase1;KGPilot123;KGPROD;OTHERKG;PH3;CAF=0.4568,0.5432;COMMON=1
+chr11	16111867	rs4617548	A	G	.	.	RS=4617548;RSPOS=16133413;dbSNPBuildID=111;SSR=0;SAO=0;VP=0x05010000030117051f000100;WGT=1;VC=SNV;SLO;REF;SYN;VLD;G5A;G5;HD;GNO;KGPhase1;KGPilot123;KGPROD;OTHERKG;PH3;CAF=0.4738,0.5262;COMMON=1
+chr12	884764	rs7300444	C	T	.	.	RS=7300444;RSPOS=993930;dbSNPBuildID=116;SSR=0;SAO=0;VP=0x05010000030117051f000100;WGT=1;VC=SNV;SLO;REF;SYN;VLD;G5A;G5;HD;GNO;KGPhase1;KGPilot123;KGPROD;OTHERKG;PH3;CAF=0.5638,0.4362;COMMON=1
+chr13	38859469	rs9532292	A	G	.	.	RS=9532292;RSPOS=39433606;dbSNPBuildID=119;SSR=0;SAO=0;VP=0x05010000030117051f000101;WGT=1;VC=SNV;SLO;REF;SYN;VLD;G5A;G5;HD;GNO;KGPhase1;KGPilot123;KGPROD;OTHERKG;PH3;CAF=0.5978,0.4022;COMMON=1
+chr14	50302999	rs2297995	G	A	.	.	RS=2297995;RSPOS=50769717;dbSNPBuildID=100;SSR=0;SAO=0;VP=0x05010000030117051f000100;WGT=1;VC=SNV;SLO;REF;SYN;VLD;G5A;G5;HD;GNO;KGPhase1;KGPilot123;KGPROD;OTHERKG;PH3;CAF=0.427,0.573;COMMON=1
+chr15	34236747	rs4577050	G	A	.	.	RS=4577050;RSPOS=34528948;dbSNPBuildID=111;SSR=0;SAO=0;VP=0x05010000030117051f000101;WGT=1;VC=SNV;SLO;REF;SYN;VLD;G5A;G5;HD;GNO;KGPhase1;KGPilot123;KGPROD;OTHERKG;PH3;CAF=0.3944,0.6056;COMMON=1
+chr16	70269677	rs2070203	G	A	.	.	RS=2070203;RSPOS=70303580;RV;dbSNPBuildID=96;SSR=0;SAO=0;VP=0x05030000030117051f000100;WGT=1;VC=SNV;S3D;SLO;REF;SYN;VLD;G5A;G5;HD;GNO;KGPhase1;KGPilot123;KGPROD;OTHERKG;PH3;CAF=0.5376,0.4624;COMMON=1
+chr17	73201609	rs1037256	G	A	.	.	RS=1037256;RSPOS=71197748;dbSNPBuildID=86;SSR=0;SAO=0;VP=0x05010000030117051f000100;WGT=1;VC=SNV;SLO;REF;SYN;VLD;G5A;G5;HD;GNO;KGPhase1;KGPilot123;KGPROD;OTHERKG;PH3;CAF=0.4408,0.5592;COMMON=1
+chr18	23833905	rs9962023	T	C	.	.	RS=9962023;RSPOS=21413869;dbSNPBuildID=119;SSR=0;SAO=0;VP=0x05010000030117051f000100;WGT=1;VC=SNV;SLO;REF;SYN;VLD;G5A;G5;HD;GNO;KGPhase1;KGPilot123;KGPROD;OTHERKG;PH3;CAF=0.3384,0.6616;COMMON=1
+chr19	10156401	rs2228611	T	C	.	.	RS=2228611;RSPOS=10267077;RV;dbSNPBuildID=98;SSR=0;SAO=0;VP=0x05032800030115051f000100;WGT=1;VC=SNV;PM;PMC;S3D;SLO;REF;SYN;VLD;G5;HD;GNO;KGPhase1;KGPilot123;KGPROD;OTHERKG;PH3;CAF=0.4628,0.5372;COMMON=1
+chr20	6119441	rs10373	A	G	.	.	RS=10373;RSPOS=6100088;RV;dbSNPBuildID=52;SSR=0;SAO=0;VP=0x05030000030117051f000100;WGT=1;VC=SNV;S3D;SLO;REF;SYN;VLD;G5A;G5;HD;GNO;KGPhase1;KGPilot123;KGPROD;OTHERKG;PH3;CAF=0.4848,0.5152;COMMON=1
+chr21	42903480	rs4148973	T	G	.	.	RS=4148973;RSPOS=44323590;dbSNPBuildID=110;SSR=0;SAO=0;VP=0x05012808030117051f000101;WGT=1;VC=SNV;PM;PMC;SLO;REF;SYN;INT;VLD;G5A;G5;HD;GNO;KGPhase1;KGPilot123;KGPROD;OTHERKG;PH3;CAF=0.4766,0.5234;COMMON=1
+chr22	20787012	rs4675	T	C	.	.	RS=4675;RSPOS=21141300;dbSNPBuildID=52;SSR=0;SAO=0;VP=0x05030008030115051f000100;WGT=1;VC=SNV;S3D;SLO;REF;SYN;INT;VLD;G5;HD;GNO;KGPhase1;KGPilot123;KGPROD;OTHERKG;PH3;CAF=0.4541,0.5459;COMMON=1
