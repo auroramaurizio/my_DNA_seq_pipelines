@@ -1,6 +1,5 @@
 suppressMessages(library(openxlsx))
 
-setwd("/beegfs/scratch/ric.cosr/ric.cosr/DellabonaP/gbprova/CNA/CNVkit/output/tumor")
 
 ############################
 #process the ratio dataframe

@@ -14,7 +14,7 @@ DATADIR_SHORT="/../"
 
 #DATADIR_SHORT
 
-samplesheet = pd.read_table("/beegfs/scratch/ric.cosr/ric.cosr/ric.caravagna/CaravagnaG_1607_WGS/Merged/sarek/caravagnag_1607_wgs_6/recalibrated.tsv", header=None)
+samplesheet = pd.read_table("/beegfs/scratch/ric.cosr/ric.cosr/recalibrated.tsv", header=None)
 
 samplesheet.columns =['pat', 'sex', 'con', 'pref','bam','bai']
 
