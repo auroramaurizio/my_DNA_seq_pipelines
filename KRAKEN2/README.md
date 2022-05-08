@@ -4,5 +4,5 @@ Wood, Derrick E., Jennifer Lu, and Ben Langmead. "Improved metagenomic analysis 
   
 
 
-![Example](Pictures/KRAKEN.png)
+![Example](Pictures/KR.png)
 *Kraken database*
