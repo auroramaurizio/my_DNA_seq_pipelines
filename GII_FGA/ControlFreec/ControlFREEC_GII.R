@@ -82,4 +82,17 @@ p + theme(strip.text = element_text(size=25)) + theme(text = element_text( size 
 dev.off()
 
 
+setwd("/Users/maurizio.aurora/Dropbox (HSR Global)/WORKSPACE/MENARINI/bioinfo/GII")
+
+big_data = read.xlsx("GII.xlsx", colNames = TRUE, rowNames = TRUE)
+head(big_data)
+
+library(ggplot2)
+# Basic violin plot
+p <- ggplot(big_data, aes(x=sample, y=as.numeric(gini), fill=sample)) + 
+  geom_violin() +  geom_boxplot(width=0.1, fill="white") + scale_fill_brewer(palette="Dark2")
+
+pdf("gini_urin_utuc_ctrl.pdf")
+p + theme(strip.text = element_text(size=25)) + theme(text = element_text( size = 20)) + theme(legend.position="none")
+dev.off()
 
