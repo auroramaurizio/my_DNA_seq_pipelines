@@ -15,6 +15,6 @@ This analysis helps to detect biases during the calling.
 
 
 ![Example](Pictures/beforetrimming.png)
-*A curve refleting a bias.*
+*A curve reflecting a bias.*
 *The reads have not been trimmed, and soft clipped regions have not been excluded from calling.*
 *This results in artifactual calling in the adapter region (first 5bp of the read)*
