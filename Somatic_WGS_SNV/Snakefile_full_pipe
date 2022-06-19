@@ -129,29 +129,20 @@ rule fastqc:
 
 ########################################################
 
-rule tiles_r1_hard:
+
+rule fix_tiles:
     input:
-        R1="MERGED/{pref}_R1.fastq.gz"
+        R1="MERGED/{pref}_R1.fastq.gz",
+        R2="MERGED/{pref}_R2.fastq.gz",
+        adapters = "adapters-pe.fa"
     output:
-        R1="tiles_h/{pref}_R1.fastq.gz"
+        R1="tiles_h/{run}/{prj}/{pref}_R1.fastq.gz",
+        R2="tiles_h/{run}/{prj}/{pref}_R2.fastq.gz"
     threads: 12
     resources: time_min=50000, mem_mb=64000, cpus=32
     shell:"""
-        mkdir -p tiles_h
-        filterbytile.sh in={input.R1} out={output.R1} ud=0.75 qd=1 ed=1 ua=.5 qa=.5 ea=.5
-       """
-
-
-rule tiles_r2_hard:
-    input:
-        R2="MERGED/{pref}_R2.fastq.gz"
-    output:
-        R2="tiles_h/{pref}_R2.fastq.gz"
-    threads: 12
-    resources: time_min=50000, mem_mb=64000, cpus=32
-    shell:"""
-        mkdir -p tiles_h
-        filterbytile.sh in={input.R2} out={output.R2} ud=0.75 qd=1 ed=1 ua=.5 qa=.5 ea=.5
+        mkdir -p tiles_hh
+        filterbytile.sh in={input.R1} in2={input.R2} out={output.R1} out2={output.R2}  ud=0.75 qd=1 ed=1 ua=.5 qa=.5 ea=.5
        """
 
 #######################################
