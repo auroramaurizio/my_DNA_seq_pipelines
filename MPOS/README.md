@@ -18,3 +18,6 @@ This analysis helps to detect biases during the calling.
 *A curve reflecting a bias.*
 *The reads have not been trimmed, and soft clipped regions have not been excluded from calling.*
 *This results in artifactual calling in the adapter region (first 5bp of the read)*
+
+![Example](Pictures/adapterregion.png)
+*Unbalnaced nucleotide content at the beginning of the reads. Artifact SNVs may be called if this region is not trimmed and soft-clipped regions are not excluded from calling. *
