@@ -20,4 +20,8 @@ This analysis helps to detect biases during the calling.
 *This results in artifactual calling in the adapter region (first 5bp of the read)*
 
 ![Example](Pictures/adapterregion.png)
-*Unbalnaced nucleotide content at the beginning of the reads. Artifact SNVs may be called if this region is not trimmed and soft-clipped regions are not excluded from calling. *
+*Un-balanced nucleotide content at the beginning of the reads. Artifact SNVs may be called if this region is not trimmed and soft-clipped regions are not excluded from calling.*
+
+
+![Example](Pictures/ExcessTA.png)
+*Excess of T-As SNVs due to T-A un-balance in the first 4 bases of the read. Calls before and after trimming. 
