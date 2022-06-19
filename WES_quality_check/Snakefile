@@ -75,6 +75,64 @@ rule mergeFastq:
         """
 
 
+rule fix_tiles:
+    input:
+        R1="MERGED_FQ/{run}/{prj}/{pref}_R1.fastq.gz",
+        R2="MERGED_FQ/{run}/{prj}/{pref}_R2.fastq.gz",
+        adapters = "adapters-pe.fa"
+    output:
+        R1="tiles_hh/{run}/{prj}/{pref}_R1.fastq.gz",
+        R2="tiles_hh/{run}/{prj}/{pref}_R2.fastq.gz"
+    threads: 12
+    resources: time_min=50000, mem_mb=64000, cpus=32
+    shell:"""
+        mkdir -p tiles_hh
+        filterbytile.sh in={input.R1} in2={input.R2} out={output.R1} out2={output.R2}  ud=0.75 qd=1 ed=1 ua=.5 qa=.5 ea=.5
+       """
+
+
+
+
+rule trimming:
+    input:
+        R1="tiles_hh/{run}/{prj}/{pref}_R1.fastq.gz",
+        R2="tiles_hh/{run}/{prj}/{pref}_R2.fastq.gz",
+        adapters = "adapters-pe.fa"
+    output:
+        R1="trimmed_hh/{run}/{prj}/{pref}_R1.fastq.gz",
+        R2="trimmed_hh/{run}/{prj}/{pref}_R2.fastq.gz"
+    log:
+        main="trimmed_hh/{run}/{prj}/{pref}_trim.log",
+        out="trimmed_hh/{run}/{prj}/{pref}_trimout.log"
+    threads: 12
+    resources: time_min=50000, mem_mb=64000, cpus=32
+    shell:"""
+        mkdir -p trimmed_hhh
+        bbduk.sh -Xmx24g in={input.R1} in2={input.R2} out={output.R1} out2={output.R2} ref={input.adapters} k=23 mink=11 rcomp=t ktrim=f kmask=X qtrim=rl trimq=5 forcetrimleft=5 forcetrimright2=0  overwrite=true stats={log.main}  2> "{log.out}"
+       """
+
+
+
+
+
+rule fastqc_tiles:
+    input:
+        R1 = "trimmed_hh/{run}/{prj}/{pref}_R1.fastq.gz",
+        R2 = "trimmed_hh/{run}/{prj}/{pref}_R2.fastq.gz"
+    output:
+        directory("qc_tiles_hh/{run}/{prj}/{pref}")
+    params: ""
+    log:
+        "logs/fastqc/{run}_{prj}_{pref}.log"
+    threads: 12
+    resources: time_min = 50000, mem_mb=25000, cpus = 32
+    shell:"""
+        mkdir -p "qc_tiles_hh/{wildcards.run}/{wildcards.prj}/{wildcards.pref}"
+        fastqc -o {output} {input.R1} {input.R2}
+        """
+
+
+
 
 
 
@@ -162,8 +220,8 @@ rule trimming:
 
 rule map:
     input:
-        R1="trimmed/{run}/{prj}/{pref}_R1.fastq.gz",
-        R2="trimmed/{run}/{prj}/{pref}_R2.fastq.gz",
+        R1="trimmed_hh/{run}/{prj}/{pref}_R1.fastq.gz",
+        R2="trimmed_hh/{run}/{prj}/{pref}_R2.fastq.gz",
         reference="/beegfs/datasets/genomes/hg38/GATK_bundle_new/v0/Homo_sapiens_assembly38.fasta"
     params:
         id = lambda wildcards: get_rgidfromrun(f"{wildcards.run}"),
@@ -257,6 +315,36 @@ rule samtools_index_only_marked:
         samtools index {input.BAM}
         touch {output}
         """
+
+
+
+rule clipOverlap:
+    input:
+        BAM = "sorted/{pref}_markdup.bam"
+    output:
+        "clipOverlap/{pref}_markdup.bam"
+    resources: time_min = 500, mem_mb=2500, cpus = 16
+    shell:"""
+        mkdir -p clipOverlap
+        bam clipOverlap --in {input.BAM} --out {output} --stats --unmapped --storeOrig
+        touch {output}
+        """
+
+
+
+rule clipOverlap_index:
+    input:
+        BAM = "clipOverlap/{pref}_markdup.bam"
+    output:
+        "clipOverlap/{pref}_markdup.bam.bai"
+    resources: time_min = 500, mem_mb=2500, cpus = 16
+    shell:"""
+        samtools index {input.BAM}
+        touch {output}
+        """
+
+
+
          
 
 #as an alternative to samtools you can use sambamba
