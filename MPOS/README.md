@@ -24,4 +24,5 @@ This analysis helps to detect biases during the calling.
 
 
 ![Example](Pictures/ExcessTA.png)
-*Excess of T-As SNVs due to T-A un-balance in the first 4 bases of the read. Calls before and after trimming. 
+*Excess of T-As SNVs due to T-A un-balance in the 4th nt of the read. Calls before and after trimming. 
+
