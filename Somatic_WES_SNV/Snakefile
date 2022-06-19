@@ -86,6 +86,39 @@ rule HsMetrics:
 
 
 
+###################################
+# Correct the effect of overlapping
+# read in fragments with very short
+# insert size
+# https://genome.sph.umich.edu/wiki/BamUtil:_clipOverlap
+###################################
+
+
+
+rule clipOverlap:
+    input:
+        BAM = "sorted/{pref}_markdup.bam"
+    output:
+        "clipOverlap/{pref}_markdup.bam"
+    resources: time_min = 500, mem_mb=2500, cpus = 16
+    shell:"""
+        mkdir -p clipOverlap
+        bam clipOverlap --in {input.BAM} --out {output} --stats --unmapped --storeOrig
+        touch {output}
+        """
+
+
+
+rule clipOverlap_index:
+    input:
+        BAM = "clipOverlap/{pref}_markdup.bam"
+    output:
+        "clipOverlap/{pref}_markdup.bam.bai"
+    resources: time_min = 500, mem_mb=2500, cpus = 16
+    shell:"""
+        samtools index {input.BAM}
+        touch {output}
+        """
 
 
 
@@ -95,11 +128,11 @@ rule HsMetrics:
 
 rule recalibC:
     input:
-        bam = DATADIR_SHORT+"/sorted/{pref}_C_markdup_only_marked.bam",
+        bam = DATADIR_SHORT+"/clipOverlap/{pref}_C_markdup_only_marked.bam",
         ref_fasta = "GRCh38_Verily/bwa-0.7.12/GRCh38_Verily_v1.genome.fa",
         known_sites = "Homo_sapiens_assembly38.known_indels.vcf.gz"
     output:
-        recal = "recalib/{pref}_C_recal_cpu.txt"
+        recal = "recalib_C/{pref}_C_recal_cpu.txt"
     resources: time_min=5000, mem_mb=48000, cpus=18
     shell:
         """
@@ -111,7 +144,7 @@ rule recalibC:
 
 rule recalibT:
     input:
-        bam = DATADIR_SHORT+"/sorted_T/{pref}_T_markdup_only_marked.bam",
+        bam = DATADIR_SHORT+"/clipOverlap/{pref}_T_markdup_only_marked.bam",
         ref_fasta = "GRCh38_Verily/bwa-0.7.12/GRCh38_Verily_v1.genome.fa",
         known_sites = "Homo_sapiens_assembly38.known_indels.vcf.gz"
     output:
@@ -127,21 +160,22 @@ rule recalibT:
 
 rule applyBQSRC:
     input:
-        bam = DATADIR_SHORT+"/sorted/{pref}_C_markdup_only_marked.bam",
+        bam = DATADIR_SHORT+"/clipOverlap/{pref}_C_markdup_only_marked.bam",
         ref_fasta = "GRCh38_Verily/bwa-0.7.12/GRCh38_Verily_v1.genome.fa",
         recal = "recalib/{pref}_C_recal_cpu.txt"
     output:
-        bam = "BQSR/{pref}_C_recal.bam"
+        bam = "BQSR_C/{pref}_C_recal.bam"
     resources: time_min=5000, mem_mb=48000, cpus=18
     shell:
         """
+        Mkdir -p BQSR_C
         gatk ApplyBQSR --java-options -Xmx30g -R {input.ref_fasta} \
         -I {input.bam} --bqsr-recal-file {input.recal} -O {output.bam}
         """
 
 rule applyBQSRT:
     input:
-        bam = DATADIR_SHORT+"/sorted_T/{pref}_T_markdup_only_marked.bam",
+        bam = DATADIR_SHORT+"/clipOverlap/{pref}_T_markdup_only_marked.bam",
         ref_fasta = "GRCh38_Verily_AM/GRCh38_Verily/bwa-0.7.12/GRCh38_Verily_v1.genome.fa",
         recal = "recalib_T/{pref}_T_recal_cpu.txt"
     output:
@@ -149,6 +183,7 @@ rule applyBQSRT:
     resources: time_min=5000, mem_mb=48000, cpus=18
     shell:
         """
+        Mkdir -p BQSR_T
         gatk ApplyBQSR --java-options -Xmx30g -R {input.ref_fasta} \
         -I {input.bam} --bqsr-recal-file {input.recal} -O {output.bam}
         """
@@ -162,10 +197,10 @@ rule applyBQSRT:
 
 rule GatkMutect2:
     input:
-        bam = "BQSR/{pref}_C_recal.bam",
+        bam = "BQSR_C/{pref}_C_recal.bam",
         ref_fasta = "GRCh38_Verily/bwa-0.7.12/GRCh38_Verily_v1.genome.fa",
     output:
-        vcf = "BQSR/{pref}_C_recal.vcf"
+        vcf = "BQSR_C/{pref}_C_recal.vcf"
     resources: time_min=5000, mem_mb=48000, cpus=18
     shell:
         """
@@ -178,13 +213,13 @@ rule GatkMutect2:
 
 #rule genomics_db_import:
 #    input:
-#        A = ["BQSR/1.vcf"],
-#        B = ["BQSR/2.vcf"],
-#        C = ["BQSR/3.vcf"],
-#        D = ["BQSR/4.vcf"],
-#        E = ["BQSR/5.vcf"],
-#        F = ["BQSR/6.vcf"],
-#        G = ["BQSR/7.vcf"],
+#        A = ["BQSR_C/1.vcf"],
+#        B = ["BQSR_C/2.vcf"],
+#        C = ["BQSR_C/3.vcf"],
+#        D = ["BQSR_C/4.vcf"],
+#        E = ["BQSR_C/5.vcf"],
+#        F = ["BQSR_C/6.vcf"],
+#        G = ["BQSR_C/7.vcf"],
 #        ref_fasta = "GRCh38_Verily/bwa-0.7.12/GRCh38_Verily_v1.genome.fa"
 #    params:
 #        baits = "Twist_Exome_Target_hg38.bed"
@@ -235,10 +270,16 @@ rule PON:
 #add -L --intervals interval parameter for WES calling
 #gatk GetSampleName -I sample.bam -O sample_name.txt #if in doubt about sample name
 
+
+
+###############################################
+# gatk mutect call: exclude soft clipped bases!
+###############################################:wq!
+
 rule Tumor_matched_Normal: 
     input:
         tumor = "BQSR_T/{pref}_T_recal.bam",
-        normal = "BQSR/{pref}_C_recal.bam",
+        normal = "BQSR_C/{pref}_C_recal.bam",
         pon = "pon.vcf.gz",
         ref_fasta = "GRCh38_Verily/bwa-0.7.12/GRCh38_Verily_v1.genome.fa"
     params:
@@ -364,4 +405,62 @@ rule MAF:
         vcf2maf.pl --input-vcf {input.vep} --output-maf {output.maf} --ref-fasta {input.genome} --tumor-id "{wildcards.sample}_OCT" --normal-id "{wildcards.sample}_PBMC" --ncbi-build GRCh38 --inhibit-vep --filter-vcf 0
         conda deactivate'
         """
+
+
+
+
+rule qualimap:
+    input:
+        "clipOverlap/{pref}_markdup.bam"
+    params:
+        bed="/beegfs/scratch/ric.cosr/ric.cosr/DellabonaP/agilent_v7_sureselect_MergedProbes.bed"
+    output:
+        directory("qualimap/{pref}")
+    resources: time_min = 50000, mem_mb=50000, cpus = 32
+    shell:"""
+        mkdir -p "qualimap/{wildcards.pref}"
+        qualimap --java-mem-size=50000M  bamqc -c -bam {input} -outdir {output} --feature-file {params.bed}
+        """
+
+
+
+
+
+rule bcftools_stats:
+    input:
+        vep = "VEP/{sample}_somatic.filtered.COSMIC.funcotator.vep.vcf"
+    params:
+        genome = "/beegfs/datasets/genomes/hg38/GATK_bundle_new/v0/Homo_sapiens_assembly38.fasta",
+        bed="/beegfs/scratch/ric.cosr/ric.cosr/DellabonaP/agilent_v7_sureselect_MergedProbes.bed"
+    output:
+        stats = "bcftools_stats/{sample}.stats"
+    resources: time_min=50000, mem_mb=12800, cpus=1
+    shell:
+        """
+        mkdir -p bcftools_stats
+        bcftools stats -F {params.genome} --threads 6 -T {params.bed} {input.vep} > {output.stats}
+        """
+
+
+
+
+rule MQC:
+    params:
+        bcftools_stats = "bcftools_stats/",
+        qualimap = "qualimap/",
+        QC = "qc_tiles_hh/",
+        PICARD = "markdup/",
+        HsMETRICS = "hsmetrics",
+    output: "MQC.done"
+    resources: time_min = 5000, mem_mb=12800, cpus = 16
+    shell:"""
+       multiqc {params.qualimap} {params.QC}
+       #multiqc {params.qualimap} {params.PICARD}
+       touch {output}
+       """
+
+
+
+
+
 

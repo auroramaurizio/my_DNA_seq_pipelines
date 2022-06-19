@@ -227,7 +227,7 @@ rule Tumor_matched_Normal:
     shell:
         """
         export TILEDB_DISABLE_FILE_LOCKING=1
-        gatk Mutect2 -R {input.ref_fasta} -I {input.tumor} -I {input.normal} -normal {params.normal} --germline-resource {params.germres} --panel-of-normals {input.pon} -O {output.vcf} --tmp-dir {params.tmpdir} --native-pair-hmm-threads 4
+        gatk Mutect2 -R {input.ref_fasta} -I {input.tumor} -I {input.normal} -normal {params.normal} --germline-resource {params.germres} --panel-of-normals {input.pon} -O {output.vcf} --tmp-dir {params.tmpdir} --native-pair-hmm-threads 4 --dont-use-soft-clipped-bases true
         """
 
 

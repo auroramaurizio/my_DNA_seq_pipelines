@@ -118,10 +118,74 @@ rule fastqc:
         """
 
 
+
+
+########################################################
+# correct the problem of bad quality tiles
+# we can have bad quality tiles when there is dirt, dust,
+# bubbles on the flowcell or it is overloaded.
+# bad quality tiles can results in artefact insertions
+# and deletions during variant calling.
+
+########################################################
+
+rule tiles_r1_hard:
+    input:
+        R1="MERGED/{pref}_R1.fastq.gz"
+    output:
+        R1="tiles_h/{pref}_R1.fastq.gz"
+    threads: 12
+    resources: time_min=50000, mem_mb=64000, cpus=32
+    shell:"""
+        mkdir -p tiles_h
+        filterbytile.sh in={input.R1} out={output.R1} ud=0.75 qd=1 ed=1 ua=.5 qa=.5 ea=.5
+       """
+
+
+rule tiles_r2_hard:
+    input:
+        R2="MERGED/{pref}_R2.fastq.gz"
+    output:
+        R2="tiles_h/{pref}_R2.fastq.gz"
+    threads: 12
+    resources: time_min=50000, mem_mb=64000, cpus=32
+    shell:"""
+        mkdir -p tiles_h
+        filterbytile.sh in={input.R2} out={output.R2} ud=0.75 qd=1 ed=1 ua=.5 qa=.5 ea=.5
+       """
+
+#######################################
+# remove bad quality nucleotides at the 
+# beginning of the read as well as 
+# residues of adapters, primers etc.
+#######################################
+
+
+rule trimming:
+    input:
+        R1="tiles_h/{pref}_R1.fastq.gz",
+        R2="tiles_h/{pref}_R2.fastq.gz",
+        adapters = "adapters-pe.fa"
+    output:
+        R1="trimmed/{pref}_R1.fastq.gz",
+        R2="trimmed/{pref}_R2.fastq.gz"
+    log:
+        main="trimmed/{pref}_trim.log",
+        out="trimmed/{pref}_trimout.log"
+    threads: 12
+    resources: time_min=50000, mem_mb=64000, cpus=32
+    shell:"""
+        mkdir -p trimmed
+        bbduk.sh -Xmx24g in={input.R1} in2={input.R2} out={output.R1} out2={output.R2} ref={input.adapters} k=23 mink=11 rcomp=t ktrim=f kmask=X qtrim=rl trimq=5 forcetrimleft=5 forcetrimright2=0  overwrite=true stats={log.main}  2> "{log.out}"
+
+       """
+
+
+
 rule map:
     input:
-        R1 = "mapped/{pref}_R1.fastq.gz",
-        R2 = "mapped/{pref}_R2.fastq.gz",
+        R1 = "trimmed/{pref}_R1.fastq.gz",
+        R2 = "trimmed/{pref}_R2.fastq.gz",
         reference = "GRCh38_Verily/bwa-0.7.12/GRCh38_Verily_v1.genome.fa"
     params:
         id = lambda wildcards: get_rgidfromrun(f"211005_A00626_0345_AHKLVHDRXY"),
@@ -183,6 +247,41 @@ rule samtools_sort_only_marked:
         samtools sort {input} -o {output}
         """
 
+#######################################
+# Correct the effect of overlapping FW 
+# and REV readswhen the IS is too short
+#######################################
+
+
+rule clipOverlap:
+    input:
+        BAM = "sorted/{pref}_markdup.bam"
+    output:
+        "clipOverlap/{pref}_markdup.bam"
+    resources: time_min = 500, mem_mb=2500, cpus = 16
+    shell:"""
+        mkdir -p clipOverlap
+        bam clipOverlap --in {input.BAM} --out {output} --stats --unmapped --storeOrig
+        touch {output}
+        """
+
+
+
+rule clipOverlap_index:
+    input:
+        BAM = "clipOverlap/{pref}_markdup.bam"
+    output:
+        "clipOverlap/{pref}_markdup.bam.bai"
+    resources: time_min = 500, mem_mb=2500, cpus = 16
+    shell:"""
+        samtools index {input.BAM}
+        touch {output}
+        """
+
+
+
+
+
 
 ###################################
 # Recalibration of T and C samples
@@ -193,7 +292,7 @@ rule samtools_sort_only_marked:
 
 rule recalibC:
     input:
-        bam = DATADIR_SHORT+"/sorted/{sample}_C_markdup_only_marked.bam",
+        bam = DATADIR_SHORT+"/clipOverlap/{sample}_C_markdup_only_marked.bam",
         ref_fasta = "GRCh38_Verily/bwa-0.7.12/GRCh38_Verily_v1.genome.fa",
         known_sites = "Homo_sapiens_assembly38.known_indels.vcf.gz"
     output:
@@ -209,7 +308,7 @@ rule recalibC:
 
 rule recalibT:
     input:
-        bam = DATADIR_SHORT+"/sorted_T/{sample}_T_markdup_only_marked.bam",
+        bam = DATADIR_SHORT+"/clipOverlap/{sample}_T_markdup_only_marked.bam",
         ref_fasta = "GRCh38_Verily/bwa-0.7.12/GRCh38_Verily_v1.genome.fa",
         known_sites = "Homo_sapiens_assembly38.known_indels.vcf.gz"
     output:
@@ -225,7 +324,7 @@ rule recalibT:
 
 rule applyBQSRC:
     input:
-        bam = DATADIR_SHORT+"/sorted/{sample}_C_markdup_only_marked.bam",
+        bam = DATADIR_SHORT+"/clipOverlap/{sample}_C_markdup_only_marked.bam",
         ref_fasta = "GRCh38_Verily/bwa-0.7.12/GRCh38_Verily_v1.genome.fa",
         recal = "recalib/{sample}_C_recal_cpu.txt"
     output:
@@ -239,7 +338,7 @@ rule applyBQSRC:
 
 rule applyBQSRT:
     input:
-        bam = DATADIR_SHORT+"/sorted_T/{sample}_T_markdup_only_marked.bam",
+        bam = DATADIR_SHORT+"/clipOverlap/{sample}_T_markdup_only_marked.bam",
         ref_fasta = "GRCh38_Verily_AM/GRCh38_Verily/bwa-0.7.12/GRCh38_Verily_v1.genome.fa",
         recal = "recalib_T/{sample}_T_recal_cpu.txt"
     output:
@@ -347,7 +446,7 @@ rule Tumor_matched_Normal:
     shell:
         """
         export TILEDB_DISABLE_FILE_LOCKING=1
-        gatk Mutect2 -R {input.ref_fasta} -I {input.tumor} -I {input.normal} -normal {params.normal} --germline-resource {params.germres} --panel-of-normals {input.pon} -O {output.vcf} --tmp-dir {params.tmpdir} --native-pair-hmm-threads 4
+        gatk Mutect2 -R {input.ref_fasta} -I {input.tumor} -I {input.normal} -normal {params.normal} --germline-resource {params.germres} --panel-of-normals {input.pon} -O {output.vcf} --tmp-dir {params.tmpdir} --native-pair-hmm-threads 4 --dont-use-soft-clipped-bases true
         """
 
 
