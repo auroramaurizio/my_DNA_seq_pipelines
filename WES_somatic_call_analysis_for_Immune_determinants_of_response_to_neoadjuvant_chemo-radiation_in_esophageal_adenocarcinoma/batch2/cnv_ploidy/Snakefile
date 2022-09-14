@@ -1,0 +1,126 @@
+import sys
+import logging
+from snakemake.io import glob_wildcards, expand
+import glob,os
+import pathlib
+import csv
+import pandas as pd
+import numpy as np
+
+#import multiqc
+
+
+
+#SAMPLELIST=("ESOCA8","ESOCA10","ESOCA11","ESOCA12","ESOCA15","ESOCA17","ESOCA18","ESOCA20","ESOCA22","ESOCA24","ESOCA25","ESOCA26", "ESOCA27", "ESOCA29","ESOCA30","ESOCA31","ESOCA33","ESOCA34","ESOCA35","ESOCA37","ESOCA39","ESOCA40","ESOCA41","ESOCA43","ESOCA45","ESOCA48","ESOCA49","ESOCA51","ESOCA52","ESOCA54","ESOCA55","ESOCA57")
+
+
+SAMPLELIST=('ESOCA27', 'ESOCA20', 'ESOCA34', 'ESOCA22', 'ESOCA29', 'ESOCA31', 'ESOCA24', 'ESOCA30', 'ESOCA33', 'ESOCA26', 'ESOCA25')
+
+SUFF=set(SAMPLELIST)
+
+print("SUFF", SUFF)
+
+SUFFIX = ' '.join(map(str, SUFF))
+
+
+print("SUFFIX",SUFFIX)
+
+
+path = "logs_slurm"
+try:
+
+    os.mkdir(path)
+except OSError:
+    print ("Creation of the directory %s failed" % path)
+else:
+    print ("Successfully created the directory %s " % path)
+
+
+
+rule all:
+    input:
+       expand(["{pref}/ok.txt"], pref=SUFFIX.split(' '))
+
+
+
+
+
+#1 Process a FASTA file to produce a GC Wiggle track file:
+#rule wiggle:
+#    input:
+#        ref_fasta = "/beegfs/datasets/genomes/hg38/GATK_bundle_new/v0/Homo_sapiens_assembly38.fasta"
+#    output:
+#        wig = "/beegfs/datasets/genomes/hg38/GATK_bundle_new/v0/Homo_sapiens_assembly38.gc50Base.wig"
+#    resources: time_min=5000, mem_mb=48000, cpus=1
+#    shell:
+#        """
+#        bash -c '
+#        . $HOME/.bashrc
+#        conda activate Sequenza
+#        sequenza-utils gc_wiggle -w 50 --fasta {input.ref_fasta} -o {output.wig}
+#        conda deactivate'
+#        """
+
+
+#2 Process BAM and Wiggle files to produce a seqz file:
+rule seqz:
+    input:
+        T_bam = "../BQSR_T/{pref}T_recal.bam",
+        N_bam = "../BQSR_C/{pref}PB_recal.bam",
+        ref_fasta = "/beegfs/datasets/genomes/hg38/GATK_bundle_new/v0/Homo_sapiens_assembly38.fasta",
+        gc = "Homo_sapiens_assembly38.gc50Base.wig"
+    output:
+        seqz = "{pref}_new.seqz.gz"
+    resources: time_min=5000, mem_mb=48000, cpus=18
+    shell:
+        """
+        bash -c '
+        . $HOME/.bashrc
+        conda activate Sequenza
+        sequenza-utils bam2seqz -n {input.N_bam} -t {input.T_bam} --fasta {input.ref_fasta} \
+             -gc {input.gc} -o {output.seqz}
+        conda deactivate'
+        """
+
+#3 Post-process by binning the original seqz file:
+rule binning:
+    input:
+        seqz = "{pref}_new.seqz.gz"
+    output:
+        out = "{pref}/{pref}.small.seqz.gz"
+    resources: time_min=5000, mem_mb=48000, cpus=18
+    shell:
+        """
+        bash -c '
+        . $HOME/.bashrc
+        conda activate Sequenza
+        sequenza-utils seqz_binning --seqz {input.seqz} -w 50 -o {output.out}
+        conda deactivate'
+        """
+
+
+
+
+#4 Rscript:
+rule Rscript:
+    input:
+        seqz = "{pref}/{pref}.small.seqz.gz",
+        sex = "sex.txt",
+        low_int = "low_int.txt",
+        top_int = "top_int.txt"
+    output:
+        "{pref}/ok.txt"
+    resources: time_min=5000, mem_mb=48000, cpus=18
+    shell:
+        """
+        bash -c '
+        . $HOME/.bashrc
+        conda activate Sequenza
+        grep {wildcards.pref} {input.sex} > {wildcards.pref}/{wildcards.pref}_sex.txt
+        grep {wildcards.pref} {input.low_int} > {wildcards.pref}/{wildcards.pref}_low_int.txt
+        grep {wildcards.pref} {input.top_int} > {wildcards.pref}/{wildcards.pref}_top_int.txt
+        sed "s#SNAME#{wildcards.pref}#g" sequenza.R > {wildcards.pref}/{wildcards.pref}_sequenza.R
+        cat {wildcards.pref}/{wildcards.pref}_sequenza.R | R --slave --args {input.seqz} {wildcards.pref}/{wildcards.pref}_sex.txt {wildcards.pref}/{wildcards.pref}_low_int.txt {wildcards.pref}/{wildcards.pref}_top_int.txt
+        touch {output}
+        conda deactivate'
+        """ 

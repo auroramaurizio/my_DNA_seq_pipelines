@@ -1,0 +1,675 @@
+import sys
+import logging
+from snakemake.io import glob_wildcards, expand
+import glob,os
+import pathlib
+import csv
+import pandas as pd
+import numpy as np
+
+
+path = "logs_slurm"
+try:
+    os.mkdir(path)
+except OSError:
+    print ("Creation of the directory %s failed" % path)
+else:
+    print ("Successfully created the directory %s " % path)
+
+
+
+DATADIR_SHORT = "/beegfs/scratch/ric.cosr/ric.cosr/DellabonaP/runs/"
+runs_set = set(["211005_A00626_0345_AHKLVHDRXY"])
+runs = ' '.join(map(str, runs_set))
+
+
+project = set(["DellabonaP_1560_1561_WES"])
+proj = ' '.join(map(str, project))
+
+
+DATADIR="/beegfs/scratch/ric.cosr/ric.cosr/DellabonaP/runs/211005_A00626_0345_AHKLVHDRXY/DellabonaP_1560_1561_WES"
+
+
+SAMPLE_LIST_DIR = os.listdir(DATADIR)
+
+
+SUFF = []
+SAMPLELIST = []
+
+
+for file in SAMPLE_LIST_DIR:
+    A = file.split("_")[0]
+    B = file.split("_")[1]
+    C = A + '_' + B
+    SUFF.append(C)
+    SAMPLELIST.append(A)
+
+
+SAMPLELIST=set(SAMPLELIST)
+SUFF=set(SUFF)
+
+#print(SUFF)
+#print(SAMPLELIST)
+
+SUFFIX = ' '.join(map(str, SUFF))
+print("SUFFIX", SUFFIX)
+
+SAMPLELIST = ' '.join(map(str, SAMPLELIST))
+print("SAMPLELIST", SAMPLELIST)
+
+
+def get_rgidfromrun(run):
+    return str(run.split("_")[3])
+
+rule all:
+    input:
+     expand(["trimmed_N/{run}/{prj}/{pref}_R1.fastq.gz"], pref=SUFFIX.split(' '), prj=proj, run=runs.split(' ')),
+     # expand(["MERGED/{run}/{prj}/{pref}_R1.fastq.gz","MERGED/{run}/{prj}/{pref}_R2.fastq.gz"], pref=SUFFIX.split(' '), prj=proj, run=runs.split(' '))
+     # expand(["MAF/{sample}_somatic.filtered.COSMIC.funcotator.maf"], sample=SAMPLELIST.split(' '))
+     #  expand(["qc/{run}/{prj}/{pref}"], pref=SUFFIX.split(' '), prj=proj, run=runs.split(' ')),
+     # expand(["mapped/{run}/{prj}/{pref}.bam"], pref=SUFFIX.split(' '), prj=proj, run=runs.split(' ')),
+     # expand(["sorted/{run}/{prj}/{pref}.bam"], pref=SUFFIX.split(' '), prj=proj, run=runs.split(' ')),
+     # expand(["merged_bam/{pref}.bam"], pref=SUFFIX.split(' '), prj=proj, run=runs.split(' ')),
+     # expand(["markdup/{pref}_markdup.bam","markdup/{pref}_markdup_metrics.log"], pref=SUFFIX.split(' ')),
+     # expand(["sorted/{pref}_markdup.bam"], pref=SUFFIX.split(' ')),
+     # expand(["sorted/{pref}_markdup.bam.bai"], pref=SUFFIX.split(' ')),
+     # expand(["qualimap_clipOverlap/{pref}"], pref=SUFFIX.split(' ')),
+     # expand(["recalib_C_clipOverlap/{sample}_C_recal_cpu.txt"], sample=SAMPLELIST.split(' ')),
+     # expand(["recalib_T_clipOverlap/{sample}_T_recal_cpu.txt"], sample=SAMPLELIST.split(' ')),
+     # expand(["BQSR_C_clipOverlap/{sample}_PB_recal.bam"], sample=SAMPLELIST.split(' ')),
+     # expand(["BQSR_T_clipOverlap/{sample}_T_recal.bam"], sample=SAMPLELIST.split(' ')),
+     # expand(["BQSR_C_clipOverlap/{sample}_PB_recal.vcf"], sample=SAMPLELIST.split(' ')),
+     # expand(["CALL_clipOverlap/{sample}_somatic.vcf.gz"], sample=SAMPLELIST.split(' ')),
+     # expand(["COSMIC_clipOverlap/{sample}_somatic.COSMIC.vcf"], sample=SAMPLELIST.split(' ')),
+     # expand(["COSMIC_clipOverlap/{sample}_somatic.filtered.COSMIC.vcf"], sample=SAMPLELIST.split(' ')),
+     # expand(["FUNCOTATOR_clipOverlap/{sample}_somatic.filtered.COSMIC.funcotator.vcf.gz"], sample=SAMPLELIST.split(' ')),
+     # expand(["FUNCOTATOR_clipOverlap/{sample}_somatic.filtered.COSMIC.funcotator.maf.gz"], sample=SAMPLELIST.split(' ')),
+     # expand(["hsmetrics_clipOverlap/{pref}_hs_metrics.txt"], pref=SUFFIX.split(' ')),     
+     # expand(["clipOverlap/{pref}_markdup.bam.bai"], pref=SUFFIX.split(' '))
+      expand(["VEP_clipOverlap/{sample}_somatic.filtered.COSMIC.funcotator.vep.vcf"], sample=SAMPLELIST.split(' ')),
+      expand(["MAF_clipOverlap/{sample}_somatic.filtered.COSMIC.funcotator.maf"], sample=SAMPLELIST.split(' '))
+
+
+
+
+#rule samtools_merge:
+#    input:
+#        expand("sorted/{run}/{prj}/{{pref}}.bam",run=runs.split(' '), prj=proj, pref=SUFFIX.split(' '))
+#    output:
+#        "merged_bam/{pref}.bam"
+#    resources: time_min = 5000, mem_mb=25000, cpus = 32
+#    threads: 32
+#    shell:"""
+#        mkdir -p merged_bam
+#        samtools merge -@ {threads} {output} {input}
+#        """
+
+rule mergeFastq_after_trimming:
+    output:
+        R1 = "MERGED/{run}/{prj}/{pref}_R1.fastq.gz",
+        R2 = "MERGED/{run}/{prj}/{pref}_R2.fastq.gz"
+    resources: time_min = 500, mem_mb=2500, cpus = 2
+    shell: """
+        mkdir -p MERGED_FQ
+            cat {DATADIR_SHORT}/{wildcards.run}/{wildcards.prj}/{wildcards.pref}_S*_R1_001.fastq.gz > MERGED/{wildcards.pref}_R1.fastq.gz
+            cat {DATADIR_SHORT}/{wildcards.run}/{wildcards.prj}/{wildcards.pref}_S*_R2_001.fastq.gz > MERGED/{wildcards.pref}_R2.fastq.gz
+            touch {output.R1}
+            touch {output.R2}
+        """
+
+
+
+rule mergeFastq_test:
+    output:
+        R1 = "MERGED/{run}/{prj}/{pref}_R1.fastq.gz",
+        R2 = "MERGED/{run}/{prj}/{pref}_R2.fastq.gz"
+    resources: time_min = 500, mem_mb=2500, cpus = 2
+    shell: """
+        mkdir -p MERGED_FQ
+            cat {DATADIR_SHORT}/{wildcards.run}/{wildcards.prj}/{wildcards.pref}_S*_R1_001.fastq.gz > MERGED/{wildcards.pref}_R1.fastq.gz
+            cat {DATADIR_SHORT}/{wildcards.run}/{wildcards.prj}/{wildcards.pref}_S*_R2_001.fastq.gz > MERGED/{wildcards.pref}_R2.fastq.gz
+            touch {output.R1}
+            touch {output.R2}
+        """
+
+rule mergeFastq:
+    output:
+        R1 = "MERGED_FQ/{run}/{prj}/{pref}_R1.fastq.gz",
+        R2 = "MERGED_FQ/{run}/{prj}/{pref}_R2.fastq.gz"
+    resources: time_min = 500, mem_mb=2500, cpus = 2
+    shell: """
+        mkdir -p MERGED_FQ
+            cat {DATADIR_SHORT}/{wildcards.run}/{wildcards.prj}/{wildcards.pref}_S*_R1_001.fastq.gz > {output.R1}
+            cat {DATADIR_SHORT}/{wildcards.run}/{wildcards.prj}/{wildcards.pref}_S*_R2_001.fastq.gz > {output.R2}
+        """
+
+
+rule fastqc:
+    input:
+        R1 = "trimmed/{run}/{prj}/{pref}_R1.fastq.gz",
+        R2 = "trimmed/{run}/{prj}/{pref}_R2.fastq.gz"
+    output:
+        directory("qc/{run}/{prj}/{pref}")
+    params: ""
+    log:
+        "logs/fastqc/{run}_{prj}_{pref}.log"
+    threads: 12
+    resources: time_min = 50000, mem_mb=25000, cpus = 32
+    shell:"""
+            mkdir -p "qc/{wildcards.run}/{wildcards.prj}/{wildcards.pref}"
+            fastqc -o {output} {input.R1} {input.R2}
+        """
+
+
+
+
+rule trimming:
+    input:
+        R1="MERGED_FQ/{run}/{prj}/{pref}_R1.fastq.gz",
+        R2="MERGED_FQ/{run}/{prj}/{pref}_R2.fastq.gz",
+        adapters = "adapters-pe.fa"
+    output:
+        R1="trimmed/{run}/{prj}/{pref}_R1.fastq.gz",
+        R2="trimmed/{run}/{prj}/{pref}_R2.fastq.gz"
+    log:
+        main="trimmed/{run}/{prj}/{pref}_trim.log",
+        out="trimmed/{run}/{prj}/{pref}_trimout.log"
+    threads: 12
+    resources: time_min=50000, mem_mb=64000, cpus=32
+    shell:"""
+        mkdir -p trimmed
+        bbduk.sh -Xmx24g in={input.R1} in2={input.R2} out={output.R1} out2={output.R2} ref={input.adapters} k=23 mink=11 rcomp=t ktrim=f kmask=X qtrim=rl trimq=5 forcetrimleft=5 forcetrimright2=0  overwrite=true stats={log.main}  2> "{log.out}"
+
+       """
+
+
+
+
+
+rule trimming_N:
+    input:
+        R1="MERGED_FQ/{run}/{prj}/{pref}_R1.fastq.gz",
+        R2="MERGED_FQ/{run}/{prj}/{pref}_R2.fastq.gz",
+        adapters = "adapters-pe.fa"
+    output:
+        R1="trimmed_N/{run}/{prj}/{pref}_R1.fastq.gz",
+        R2="trimmed_N/{run}/{prj}/{pref}_R2.fastq.gz"
+    log:
+        main="trimmed_N/{run}/{prj}/{pref}_trim.log",
+        out="trimmed_N/{run}/{prj}/{pref}_trimout.log"
+    threads: 12
+    resources: time_min=50000, mem_mb=64000, cpus=32
+    shell:"""
+        mkdir -p trimmed
+        bbduk.sh -Xmx24g in={input.R1} in2={input.R2} out={output.R1} out2={output.R2} ref={input.adapters} k=23 mink=11 rcomp=t ktrim=f kmask=N qtrim=rl trimq=5 forcetrimleft=5 forcetrimright2=0  overwrite=true stats={log.main}  2> "{log.out}"
+
+       """
+
+
+
+
+
+rule map:
+    input:
+        R1="trimmed/{run}/{prj}/{pref}_R1.fastq.gz",
+        R2="trimmed/{run}/{prj}/{pref}_R2.fastq.gz",
+        reference="/beegfs/datasets/genomes/hg38/GATK_bundle_new/v0/Homo_sapiens_assembly38.fasta"
+    params:
+        id = lambda wildcards: get_rgidfromrun(f"{wildcards.run}"),
+        pu=lambda wildcards: f"{wildcards.run}.{wildcards.pref}",
+        sm=lambda wildcards: f"{wildcards.pref}",
+        pl="NextSeq500"
+        #lb = lambda wildcards:get_rgidfromrun(f"{wildcards.run}").f"{wildcards.pref}"
+    output:
+        "mapped/{run}/{prj}/{pref}.bam"
+    threads: 32
+    resources: time_min=50000, mem_mb=25000, cpus=32
+    shell:"""
+
+       bwa mem -t 72 -M -R '@RG\\tID:{params.id}.{params.sm}\\tPL:{params.pl}\\tPU:{params.pu}\\tSM:{params.sm}\\tLB:{params.id}.{params.sm}\\tCN:COSR\\tSO:unsorted' {input.reference} {input.R1} {input.R2} | samtools view -Sb > {output}
+
+       """
+
+
+
+rule samtools_sort_map:
+    input:
+        "mapped/{run}/{prj}/{pref}.bam"
+    output:
+        "sorted/{run}/{prj}/{pref}.bam"
+    resources: time_min = 5000, mem_mb=25000, cpus = 32
+    shell:"""
+        mkdir -p sorted
+        samtools sort {input} -o {output}
+        """
+
+
+rule samtools_merge:
+    input:
+        expand("sorted/{run}/{prj}/{{pref}}.bam",run=runs.split(' '), prj=proj, pref=SUFFIX.split(' '))
+    output:
+        "merged_bam/{pref}.bam"
+    resources: time_min = 5000, mem_mb=25000, cpus = 32
+    threads: 32
+    shell:"""
+        mkdir -p merged_bam
+        samtools merge -@ {threads} {output} {input}
+        """
+
+rule rmdup_only_marked:
+    input:
+        "merged_bam/{pref}.bam"
+    output:
+        reads = "markdup/{pref}_markdup.bam",
+        metrics = "markdup/{pref}_markdup_metrics.log"
+    resources: time_min=5000, mem_mb=2500, cpus=36
+    shell:"""
+       mkdir -p markdup
+       picard MarkDuplicates REMOVE_DUPLICATES=false\
+       I={input} \
+       O={output.reads} \
+       M={output.metrics}
+       """
+
+
+rule samtools_sort_marked:
+    input:
+        "markdup/{pref}_markdup.bam"
+    output:
+        "sorted/{pref}_markdup.bam"
+    resources: time_min = 5000, mem_mb=25000, cpus = 32
+    shell:"""
+        mkdir -p sorted
+        samtools sort {input} -o {output}
+        """
+
+
+rule samtools_index_only_marked:
+    input:
+        BAM = "sorted/{pref}_markdup.bam"
+    output:
+        "sorted/{pref}_markdup.bam.bai"
+    resources: time_min = 500, mem_mb=2500, cpus = 16
+    shell:"""
+        samtools index {input.BAM}
+        touch {output}
+        """
+
+
+
+
+
+rule clipOverlap:
+    input:
+        BAM = "sorted/{pref}_markdup.bam"
+    output:
+        "clipOverlap/{pref}_markdup.bam"
+    resources: time_min = 500, mem_mb=2500, cpus = 16
+    shell:"""
+        mkdir -p clipOverlap
+        bam clipOverlap --in {input.BAM} --out {output} --stats --unmapped --storeOrig
+        touch {output}
+        """
+
+
+
+rule clipOverlap_index:
+    input:
+        BAM = "clipOverlap/{pref}_markdup.bam"
+    output:
+        "clipOverlap/{pref}_markdup.bam.bai"
+    resources: time_min = 500, mem_mb=2500, cpus = 16
+    shell:"""
+        samtools index {input.BAM}
+        touch {output}
+        """
+
+
+         
+
+rule qualimap:
+    input:
+        "sorted/{pref}_markdup.bam"
+    params:
+        bed="/beegfs/scratch/ric.cosr/ric.cosr/DellabonaP/agilent_v7_sureselect_MergedProbes.bed"
+    output:
+        directory("qualimap/{pref}")
+    resources: time_min = 50000, mem_mb=50000, cpus = 32
+    shell:"""
+        mkdir -p "qualimap/{wildcards.pref}"
+        qualimap --java-mem-size=50000M  bamqc -c -bam {input} -outdir {output} --feature-file {params.bed}
+        """
+
+
+# Recalibration of T and C samples
+###################################
+
+rule recalibC:
+    input:
+        bam = "clipOverlap/{sample}_PB_markdup.bam",
+        ref_fasta = "/beegfs/datasets/genomes/hg38/GATK_bundle_new/v0/Homo_sapiens_assembly38.fasta",
+        known_sites = "/beegfs/datasets/genomes/hg38/GATK_bundle_new/v0/Homo_sapiens_assembly38.known_indels.vcf.gz"
+    output:
+        recal = "recalib_C_clipOverlap/{sample}_C_recal_cpu.txt"
+    resources: time_min=5000, mem_mb=48000, cpus=18
+    shell:
+        """
+        gatk BaseRecalibrator --java-options -Xmx30g --input {input.bam} --output \
+        {output.recal} --known-sites {input.known_sites} \
+        --reference {input.ref_fasta}
+        """
+
+
+rule recalibT:
+    input:
+        bam = "clipOverlap/{sample}_T_markdup.bam",
+        ref_fasta = "/beegfs/datasets/genomes/hg38/GATK_bundle_new/v0/Homo_sapiens_assembly38.fasta",
+        known_sites = "/beegfs/datasets/genomes/hg38/GATK_bundle_new/v0/Homo_sapiens_assembly38.known_indels.vcf.gz"
+    output:
+        recal = "recalib_T_clipOverlap/{sample}_T_recal_cpu.txt"
+    resources: time_min=5000, mem_mb=48000, cpus=18
+    shell:
+        """
+        gatk BaseRecalibrator --java-options -Xmx30g --input {input.bam} --output \
+        {output.recal} --known-sites {input.known_sites} \
+        --reference {input.ref_fasta}
+        """
+
+
+rule applyBQSRT:
+    input:
+        bam = "clipOverlap/{sample}_T_markdup.bam",
+        ref_fasta = "/beegfs/datasets/genomes/hg38/GATK_bundle_new/v0/Homo_sapiens_assembly38.fasta",
+        recal = "recalib_T_clipOverlap/{sample}_T_recal_cpu.txt"
+    output:
+        bam = "BQSR_T_clipOverlap/{sample}_T_recal.bam"
+    resources: time_min=5000, mem_mb=48000, cpus=18
+    shell:
+        """
+        gatk ApplyBQSR --java-options -Xmx30g -R {input.ref_fasta} \
+        -I {input.bam} --bqsr-recal-file {input.recal} -O {output.bam}
+        """
+
+rule applyBQSRC:
+    input:
+        bam = "clipOverlap/{sample}_PB_markdup.bam",
+        ref_fasta = "/beegfs/datasets/genomes/hg38/GATK_bundle_new/v0/Homo_sapiens_assembly38.fasta",
+        recal = "recalib_C_clipOverlap/{sample}_C_recal_cpu.txt"
+    output:
+        bam = "BQSR_C_clipOverlap/{sample}_PB_recal.bam"
+    resources: time_min=5000, mem_mb=48000, cpus=18
+    shell:
+        """
+        gatk ApplyBQSR --java-options -Xmx30g -R {input.ref_fasta} \
+        -I {input.bam} --bqsr-recal-file {input.recal} -O {output.bam}
+        """
+
+
+
+###############################
+# panel of normal creation
+###############################
+
+
+
+rule GatkMutect2:
+    input:
+        bam = "BQSR_C_clipOverlap/{sample}_PB_recal.bam",
+        ref_fasta = "/beegfs/datasets/genomes/hg38/GATK_bundle_new/v0/Homo_sapiens_assembly38.fasta",
+    output:
+        vcf = "BQSR_C_clipOverlap/{sample}_PB_recal.vcf"
+    resources: time_min=5000, mem_mb=48000, cpus=18
+    shell:
+        """
+        gatk Mutect2 -R {input.ref_fasta} -I {input.bam} -max-mnp-distance 0 -O {output.vcf}
+        """
+
+
+rule genomics_db_import:
+    input:
+        samplenamemap = "cohort.sample_map",
+        ref_fasta = "/beegfs/datasets/genomes/hg38/GATK_bundle_new/v0/Homo_sapiens_assembly38.fasta"
+    params:
+        baits = "/beegfs/datasets/buffer/ric.cosr/GRCh38_GDC/annotation/agilent_v7_sureselect_MergedProbes.interval_list",
+        tmpdir = "/beegfs/scratch/tmp"
+    output:
+        db = directory("pon_dbs")
+    resources: time_min=50000, mem_mb=128000, cpus=7
+    shell:
+        """
+        gatk GenomicsDBImport -R {input.ref_fasta} --sample-name-map {input.samplenamemap} -L {params.baits} --genomicsdb-workspace-path {output.db} --merge-input-intervals --reader-threads 7 --tmp-dir {params.tmpdir}
+        touch {output.db}
+        """
+
+
+rule PON:
+    input:
+        args = "pon_dbs",
+        ref_fasta = "/beegfs/datasets/genomes/hg38/GATK_bundle_new/v0/Homo_sapiens_assembly38.fasta"
+    params:
+        args = "gendb://pon_dbs"
+    output:
+        vcf = "pon.vcf.gz"
+    resources: time_min=50000, mem_mb=128000, cpus=32
+    shell:
+        """
+        export TILEDB_DISABLE_FILE_LOCKING=1
+        gatk CreateSomaticPanelOfNormals -R {input.ref_fasta} -O {output.vcf} -V {params.args}
+        """
+
+
+
+
+
+rule Tumor_matched_Normal: 
+    input:
+        ref_fasta = "/beegfs/datasets/genomes/hg38/GATK_bundle_new/v0/Homo_sapiens_assembly38.fasta",
+        tumor = "BQSR_T_clipOverlap/{sample}_T_recal.bam",
+        normal = "BQSR_C_clipOverlap/{sample}_PB_recal.bam",
+        pon = "pon.vcf.gz"
+    params:
+        baits = "/beegfs/datasets/buffer/ric.cosr/GRCh38_GDC/annotation/agilent_v7_sureselect_MergedProbes.interval_list",
+        ref_fasta = "/beegfs/datasets/genomes/hg38/GATK_bundle_new/v0/Homo_sapiens_assembly38.fasta",
+        normal = "{sample}_PB",
+        germres = "/beegfs/datasets/genomes/hg38/GATK_pypette/af-only-gnomad.hg38.vcf.gz",
+        tmpdir = "/beegfs/scratch/tmp"
+    output:  
+        vcf = "CALL_clipOverlap/{sample}_somatic.vcf.gz"
+    resources: time_min=50000, mem_mb=128000, cpus=16
+    shell:
+        """
+        mkdir -p CALL_clipOverlap
+        export TILEDB_DISABLE_FILE_LOCKING=1
+        gatk Mutect2 -R {input.ref_fasta} -I {input.tumor} -I {input.normal} -normal {params.normal} --germline-resource {params.germres} --dont-use-soft-clipped-bases true --panel-of-normals {input.pon} -O {output.vcf} --tmp-dir {params.tmpdir} --native-pair-hmm-threads 8
+        """
+
+rule Annotat_Cosmic:
+    input:
+        vcf = "CALL_clipOverlap/{sample}_somatic.vcf.gz"
+    params:
+        cosmic = "/beegfs/scratch/ric.cosr/ric.cosr/DellabonaP/CosmicCodingMuts.normal.vcf.gz"
+    output:
+        vcf = "COSMIC_clipOverlap/{sample}_somatic.COSMIC.vcf"
+    resources: time_min=50000, mem_mb=128000, cpus=8
+    shell:
+        """
+        mkdir -p COSMIC_clipOverlap
+        zcat {input.vcf}| SnpSift annotate  -info "COSMIC" {params.cosmic} > {output.vcf}
+        """
+
+
+
+rule Annotat_Cosmic_filtered:
+    input:
+        vcf = "CALL_clipOverlap/{sample}_somatic.filtered.vcf.gz"
+    params:
+        cosmic = "/beegfs/scratch/ric.cosr/ric.cosr/DellabonaP/CosmicCodingMuts.normal.vcf.gz"
+    output:
+        vcf = "COSMIC_clipOverlap/{sample}_somatic.filtered.COSMIC.vcf"
+    resources: time_min=50000, mem_mb=128000, cpus=8
+    shell:
+        """
+        mkdir -p COSMIC_clipOverlap
+        zcat {input.vcf}| SnpSift annotate  -info "COSMIC" {params.cosmic} > {output.vcf}
+        """
+
+################################
+# filter mutect calls
+################################
+
+
+rule Filter:
+    input:
+        genome = "/beegfs/datasets/genomes/hg38/GATK_bundle_new/v0/Homo_sapiens_assembly38.fasta",
+        vcf = "CALL_clipOverlap/{sample}_somatic.vcf.gz"
+    params:
+        tmpdir = "/beegfs/scratch/tmp"
+    output:
+        vcf = "CALL_clipOverlap/{sample}_somatic.filtered.vcf.gz"
+    resources: time_min=50000, mem_mb=128000, cpus=16
+    shell:
+        """
+        export TILEDB_DISABLE_FILE_LOCKING=1
+        gatk FilterMutectCalls -R {input.genome} -V {input.vcf} -O {output.vcf} --tmp-dir {params.tmpdir}
+        """
+ 
+
+
+##################################
+# funcotator VCF
+#################################
+
+
+rule FuncotatorVCF:
+    input:
+        genome = "/beegfs/datasets/genomes/hg38/GATK_bundle_new/v0/Homo_sapiens_assembly38.fasta",
+        vcf = "COSMIC_clipOverlap/{sample}_somatic.filtered.COSMIC.vcf"
+    params:
+        funcotator = "/beegfs/scratch/ric.cosr/ric.cosr/DellabonaP/funcotator_dataSources.v1.7.20200521s"
+    output:
+        vcf = "FUNCOTATOR_clipOverlap/{sample}_somatic.filtered.COSMIC.funcotator.vcf.gz"
+    resources: time_min=50000, mem_mb=128000, cpus=16
+    shell:
+        """
+        export TILEDB_DISABLE_FILE_LOCKING=1
+        gatk Funcotator --variant {input.vcf} --reference {input.genome} --ref-version hg38 --data-sources-path {params.funcotator} --remove-filtered-variants --verbosity DEBUG --output {output.vcf} --output-file-format VCF
+        """
+
+
+
+
+#################################
+# funcotator MAF
+################################
+
+
+rule FuncotatorMAF:
+    input:
+        genome = "/beegfs/datasets/genomes/hg38/GATK_bundle_new/v0/Homo_sapiens_assembly38.fasta",
+        vcf = "COSMIC_clipOverlap/{sample}_somatic.filtered.COSMIC.vcf"
+    params:
+        funcotator = "/beegfs/scratch/ric.cosr/ric.cosr/DellabonaP/funcotator_dataSources.v1.7.20200521s"
+    output:
+        vcf = "FUNCOTATOR_clipOverlap/{sample}_somatic.filtered.COSMIC.funcotator.maf.gz"
+    resources: time_min=50000, mem_mb=128000, cpus=16
+    shell:
+        """
+        export TILEDB_DISABLE_FILE_LOCKING=1
+        gatk Funcotator --variant {input.vcf} --reference {input.genome} --ref-version hg38 --data-sources-path {params.funcotator} --remove-filtered-variants --verbosity DEBUG --output {output.vcf} --output-file-format MAF
+        """
+
+#/beegfs/datasets/genomes/hg38/GATK_bundle_new/v0/Homo_sapiens_assembly38.fasta
+
+rule HsMetrics:
+    input:
+      BAM = "clipOverlap/{pref}_markdup.bam"
+    output:
+      HsMetrics = "hsmetrics_clipOverlap/{pref}_hs_metrics.txt"
+    params:
+      reference = "/beegfs/datasets/genomes/hg38/GATK_bundle_new/v0/Homo_sapiens_assembly38.fasta",
+      baits = "agilent_interval_list"
+    resources: time_min = 50000, mem_mb=50000, cpus = 32
+    shell:"""
+    mkdir -p hsmetrics_clipOverlap
+    picard CollectHsMetrics \
+      I={input.BAM} \
+      O={output.HsMetrics} \
+      R={params.reference} \
+      BAIT_INTERVALS={params.baits} \
+      TARGET_INTERVALS={params.baits}
+      """
+
+
+
+rule MQC:
+    params:
+        bcftools_stats = "bcftools_stats/",
+        qualimap = "qualimap/",
+        QC = "qc/",
+        PICARD = "markdup/",
+        HsMETRICS = "hsmetrics",
+    output: "MQC.done"
+    resources: time_min = 5000, mem_mb=12800, cpus = 16
+    shell:"""
+       multiqc {params.qualimap} {params.bcftools_stats} {params.HsMETRICS} {params.PICARD} {params.QC}
+       touch {output}
+       """
+
+
+
+
+
+rule VEP:
+    input:
+        genome = "/beegfs/datasets/genomes/hg38/GATK_bundle_new/v0/Homo_sapiens_assembly38.fasta",
+        vcf = "FUNCOTATOR_clipOverlap/{sample}_somatic.filtered.COSMIC.funcotator.vcf.gz"
+    output:
+        vep = "VEP_clipOverlap/{sample}_somatic.filtered.COSMIC.funcotator.vep.vcf"
+    resources: time_min=50000, mem_mb=12800, cpus=1
+    shell:
+        """
+        bash -c '
+        . $HOME/.bashrc
+        conda activate pypette-dna-wes
+        mkdir -p VEP_clipOverlap
+        vep --offline --cache -i {input.vcf} -o {output.vep} --dir_cache /beegfs/datasets/genomes/hg38/annotation/VEP-cache --hgvs --vcf --force_overwrite --fasta {input.genome}
+        conda deactivate'
+        """
+
+
+
+rule MAF:
+    input:
+        genome = "/beegfs/datasets/genomes/hg38/GATK_bundle_new/v0/Homo_sapiens_assembly38.fasta",
+        vep = "VEP_clipOverlap/{sample}_somatic.filtered.COSMIC.funcotator.vep.vcf"
+    output:
+        maf = "MAF_clipOverlap/{sample}_somatic.filtered.COSMIC.funcotator.maf"
+    resources: time_min=50000, mem_mb=12800, cpus=1
+    shell:
+        """
+        bash -c '
+        . $HOME/.bashrc
+        conda activate pypette-dna-wes
+        mkdir -p MAF_clipOverlap
+        vcf2maf.pl --input-vcf {input.vep} --output-maf {output.maf} --ref-fasta {input.genome} --tumor-id "{wildcards.sample}_T" --normal-id "{wildcards.sample}_PB" --ncbi-build GRCh38 --inhibit-vep --filter-vcf 0
+        conda deactivate'
+        """
+
+
+
+
+rule bcftools_stats:
+    input:
+        vep = "VEP/{sample}_somatic.filtered.COSMIC.funcotator.vep.vcf" 
+    params: 
+        genome = "/beegfs/datasets/genomes/hg38/GATK_bundle_new/v0/Homo_sapiens_assembly38.fasta",
+        bed="/beegfs/scratch/ric.cosr/ric.cosr/DellabonaP/agilent_v7_sureselect_MergedProbes.bed"
+    output:
+        stats = "bcftools_stats/{sample}.stats"
+    resources: time_min=50000, mem_mb=12800, cpus=1
+    shell:
+        """
+        mkdir -p bcftools_stats
+        bcftools stats -F {params.genome} --threads 6 -T {params.bed} {input.vep} > {output.stats}
+        """
+
