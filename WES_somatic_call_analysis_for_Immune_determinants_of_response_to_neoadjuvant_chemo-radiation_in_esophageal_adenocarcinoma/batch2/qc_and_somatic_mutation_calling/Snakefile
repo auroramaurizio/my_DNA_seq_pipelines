@@ -152,11 +152,10 @@ DATADIR_140_1153="/beegfs/scratch/ric.cosr/ric.cosr/DellabonaP/runs/200527_A0062
 
 rule all:
     input:
-       #expand(["MERGED/{prefix}_R1.fastq.gz"], prefix=SUFFIX.split(' ')),
-       #expand(["MERGED/{prefix}_R2.fastq.gz"], prefix=SUFFIX.split(' ')),
-       expand(["MAFCALL_collect_overlap/{sample}_somatic.filtered.COSMIC.funcotator.maf"], sample=SAMPLELIST.split(' ')),
+       #expand(["MERGED_T_N/{prefix}_R1.fastq.gz"], prefix=SUFFIX.split(' ')),
+       #expand(["MERGED_T_N/{prefix}_R2.fastq.gz"], prefix=SUFFIX.split(' ')),
+       #expand(["MAFCALL_collect_overlap/{sample}_somatic.filtered.COSMIC.funcotator.maf"], sample=SAMPLELIST.split(' ')),
        #expand(["FUNCOTATORCALL_collect_overlap/{sample}_somatic.filtered.COSMIC.funcotator.vcf.gz"], sample=SAMPLELIST.split(' ')),
-       #expand(["FUNCOTATORCALL_collect_overlap/{sample}_somatic.filtered.COSMIC.funcotator.maf.gz"], sample=SAMPLELIST.split(' ')),
        #expand(["hsmetrics/{pref}_hs_metrics.txt"], pref=SUFFIX.split(' ')),
        #expand(["bcftools_stats/{sample}.stats"], sample=SAMPLELIST.split(' '))
        #expand(["merged_bam/{prefix}.bam"], prefix=SUFFIX.split(' '))
@@ -164,29 +163,20 @@ rule all:
        #expand(["mapped/200721_A00626_0163_BHNWMWDMXX/{prj}/{pref}.bam"], pref=SUFF_163_1153_sd.split(' '), prj=proj, run=runs.split(' '), allow_missing=True),
        #expand(["mapped/200622_A00626_0149_AHMLM5DRXX/{prj}/{pref}.bam"], pref=SUFF_149_1153_sd.split(' '), prj=proj, run=runs.split(' '), allow_missing=True),
        #expand(["mapped/200527_A00626_0140_AHJNHHDRXX/{prj}/{pref}.bam"], pref=SUFF_140_1153_sd.split(' '), prj=proj, run=runs.split(' '), allow_missing=True),
-       #expand(["tiles_h/200721_A00626_0163_BHNWMWDMXX/{prj}/{pref}_R2.fastq.gz"], pref=SUFF_163_1153_sd.split(' '), prj=proj, run="200721_A00626_0163_BHNWMWDMXX", allow_missing=True),
-       #expand(["tiles_h/200622_A00626_0149_AHMLM5DRXX/{prj}/{pref}_R2.fastq.gz"], pref=SUFF_149_1153_sd.split(' '), prj=proj, run="200622_A00626_0149_AHMLM5DRXX", allow_missing=True),
-       #expand(["tiles_h/200527_A00626_0140_AHJNHHDRXX/{prj}/{pref}_R2.fastq.gz"], pref=SUFF_140_1153_sd.split(' '), prj=proj, run="200527_A00626_0140_AHJNHHDRXX", allow_missing=True),
-       #expand(["tiles_h/200922_NB501182_0512_AH5H32AFX2/{prj}/{pref}_R2.fastq.gz"], pref=SUFF_512_1153_sd.split(' '), prj=proj, run="200922_NB501182_0512_AH5H32AFX2", allow_missing=True),
        #expand(["tiles_hh/200721_A00626_0163_BHNWMWDMXX/{prj}/{pref}_R1.fastq.gz"], pref=SUFF_163_1153_sd.split(' '), prj=proj, run="200721_A00626_0163_BHNWMWDMXX", allow_missing=True),
        #expand(["tiles_hh/200622_A00626_0149_AHMLM5DRXX/{prj}/{pref}_R1.fastq.gz"], pref=SUFF_149_1153_sd.split(' '), prj=proj, run="200622_A00626_0149_AHMLM5DRXX", allow_missing=True),
        #expand(["tiles_hh/200527_A00626_0140_AHJNHHDRXX/{prj}/{pref}_R1.fastq.gz"], pref=SUFF_140_1153_sd.split(' '), prj=proj, run="200527_A00626_0140_AHJNHHDRXX", allow_missing=True),
        #expand(["tiles_hh/200922_NB501182_0512_AH5H32AFX2/{prj}/{pref}_R1.fastq.gz"], pref=SUFF_512_1153_sd.split(' '), prj=proj, run="200922_NB501182_0512_AH5H32AFX2", allow_missing=True),
-       expand(["trimmed_hh_N/200721_A00626_0163_BHNWMWDMXX/{prj}/{pref}_R1.fastq.gz"], pref=SUFF_163_1153_sd.split(' '), prj=proj, run="200721_A00626_0163_BHNWMWDMXX", allow_missing=True),
-       expand(["trimmed_hh_N/200622_A00626_0149_AHMLM5DRXX/{prj}/{pref}_R1.fastq.gz"], pref=SUFF_149_1153_sd.split(' '), prj=proj, run="200622_A00626_0149_AHMLM5DRXX", allow_missing=True),
-       expand(["trimmed_hh_N/200527_A00626_0140_AHJNHHDRXX/{prj}/{pref}_R1.fastq.gz"], pref=SUFF_140_1153_sd.split(' '), prj=proj, run="200527_A00626_0140_AHJNHHDRXX", allow_missing=True),
-       expand(["trimmed_hh_N/200922_NB501182_0512_AH5H32AFX2/{prj}/{pref}_R1.fastq.gz"], pref=SUFF_512_1153_sd.split(' '), prj=proj, run="200922_NB501182_0512_AH5H32AFX2", allow_missing=True),
+       #expand(["trimmed_hh_N/200721_A00626_0163_BHNWMWDMXX/{prj}/{pref}_R1.fastq.gz"], pref=SUFF_163_1153_sd.split(' '), prj=proj, run="200721_A00626_0163_BHNWMWDMXX", allow_missing=True),
+       #expand(["trimmed_hh_N/200622_A00626_0149_AHMLM5DRXX/{prj}/{pref}_R1.fastq.gz"], pref=SUFF_149_1153_sd.split(' '), prj=proj, run="200622_A00626_0149_AHMLM5DRXX", allow_missing=True),
+       #expand(["trimmed_hh_N/200527_A00626_0140_AHJNHHDRXX/{prj}/{pref}_R1.fastq.gz"], pref=SUFF_140_1153_sd.split(' '), prj=proj, run="200527_A00626_0140_AHJNHHDRXX", allow_missing=True),
+       #expand(["trimmed_hh_N/200922_NB501182_0512_AH5H32AFX2/{prj}/{pref}_R1.fastq.gz"], pref=SUFF_512_1153_sd.split(' '), prj=proj, run="200922_NB501182_0512_AH5H32AFX2", allow_missing=True),
        #expand(["qc_tiles_hh/200922_NB501182_0512_AH5H32AFX2/{prj}/{pref}"], pref=SUFF_512_1153_sd.split(' '), prj=proj, run="200922_NB501182_0512_AH5H32AFX2", allow_missing=True),
        #expand(["qc_tiles_hh/200721_A00626_0163_BHNWMWDMXX/{prj}/{pref}"], pref=SUFF_163_1153_sd.split(' '), prj=proj, run="200721_A00626_0163_BHNWMWDMXX", allow_missing=True),
        #expand(["qc_tiles_hh/200622_A00626_0149_AHMLM5DRXX/{prj}/{pref}"], pref=SUFF_149_1153_sd.split(' '), prj=proj, run="200622_A00626_0149_AHMLM5DRXX", allow_missing=True),
        #expand(["qc_tiles_hh/200527_A00626_0140_AHJNHHDRXX/{prj}/{pref}"], pref=SUFF_140_1153_sd.split(' '), prj=proj, run="200527_A00626_0140_AHJNHHDRXX", allow_missing=True),
-       expand(["MERGED_T_N/{pref}_R2.fastq.gz"], pref=SUFFIX.split(' '), prj=proj, run=runs.split(' ')),
-       expand(["MERGED_T_N/{pref}_R1.fastq.gz"], pref=SUFFIX.split(' '), prj=proj, run=runs.split(' ')),
        #expand(["MERGED/{run}/{prj}/{pref}_R1.fastq.gz","MERGED/{run}/{prj}/{pref}_R2.fastq.gz"], pref=SUFF_163_1153_sd.split(' '), prj=proj, run=runs.split(' '),allow_missing=True)
-       #expand(["MAF/{sample}_somatic.filtered.COSMIC.funcotator.maf"], sample=SAMPLELIST.split(' '))
        #expand(["hsmetrics/{pref}_hs_metrics.txt"], pref=SUFFIX.split(' '))
-       #expand(["FUNCOTATOR/{sample}_somatic.filtered.COSMIC.funcotator.vcf.gz"], sample=SAMPLELIST.split(' ')),
-       #expand(["FUNCOTATOR/{sample}_somatic.filtered.COSMIC.funcotator.maf.gz"], sample=SAMPLELIST.split(' '))
        #expand(["fastqc/{sample}"], sample=SAMPLELIST.split(' ')),
        #expand(["qc/200922_NB501182_0512_AH5H32AFX2/{prj}/{pref}"], pref=SUFF_512_1153_sd.split(' '), prj=proj, run="200922_NB501182_0512_AH5H32AFX2", allow_missing=True),
        #expand(["qc/200721_A00626_0163_BHNWMWDMXX/{prj}/{pref}"], pref=SUFF_163_1153_sd.split(' '), prj=proj, run="200721_A00626_0163_BHNWMWDMXX", allow_missing=True),
@@ -208,23 +198,14 @@ rule all:
        #expand(["markdup/{pref}_markdup.bam","markdup/{pref}_markdup_metrics.log"], pref=SUFFIX.split(' ')),
        #expand(["clipOverlap/{pref}_markdup.bam.bai"], pref=SUFFIX.split(' ')),
        #expand(["sorted/{pref}_markdup.bam.bai"], pref=SUFFIX.split(' ')),
-       expand(["qualimap/{pref}"], pref=SUFFIX.split(' ')),
+       #expand(["qualimap/{pref}"], pref=SUFFIX.split(' ')),
        #expand(["recalib_C/{sample}_C_recal_cpu.txt"], sample=SAMPLELIST.split(' ')),
        #expand(["recalib_T/{sample}_T_recal_cpu.txt"], sample=SAMPLELIST.split(' ')),
        #expand(["BQSR_C/{sample}PB_recal.bam"], sample=SAMPLELIST.split(' ')),
        #expand(["BQSR_T/{sample}T_recal.bam"], sample=SAMPLELIST.split(' ')),
        #expand(["BQSR_C/{sample}PB_recal.vcf"], sample=SAMPLELIST.split(' ')),
-       #expand(["CALL_collect_overlap/{sample}_somatic.vcf.gz"], sample=SAMPLELIST.split(' '))
-       #expand(["COSMIC/{sample}_somatic.COSMIC.vcf"], sample=SAMPLELIST.split(' ')),
-       #expand(["COSMIC/{sample}_somatic.filtered.COSMIC.vcf"], sample=SAMPLELIST.split(' ')),
-       #expand(["FUNCOTATOR/{sample}_somatic.filtered.COSMIC.funcotator.vcf.gz"], sample=SAMPLELIST.split(' ')),
-       #expand(["FUNCOTATOR/{sample}_somatic.filtered.COSMIC.funcotator.maf.gz"], sample=SAMPLELIST.split(' '))
-       #expand(["MAF/{sample}_somatic.filtered.COSMIC.funcotator.maf"], sample=SAMPLELIST.split(' '))      
-       #expand(["MERGED/{run}/{prj}/{pref}_R1.fastq.gz","MERGED/{run}/{prj}/{pref}_R2.fastq.gz"], pref=SUFFIX_480.split(' '), prj=proj, run=runs.split(' '))
-       #expand(["fastqc/{pref}"], pref=SUFFIX.split(' '), allow_missing=True)
        #expand(["bcftools_stats/{sample}.stats"], sample=SAMPLELIST.split(' '))
        #expand(["hsmetrics/{pref}_hs_metrics.txt"], pref=SUFFIX.split(' '))
-       #expand(["bcftools_stats/{sample}.stats"], sample=SAMPLELIST.split(' '))
 
 
 
@@ -715,6 +696,7 @@ rule FuncotatorVCF:
         export TILEDB_DISABLE_FILE_LOCKING=1
         gatk Funcotator --variant {input.vcf} --reference {input.genome} --ref-version hg38 --data-sources-path {params.funcotator} --remove-filtered-variants --verbosity DEBUG --output {output.vcf} --output-file-format VCF
         """
+
 
 rule VEP:
     input:
