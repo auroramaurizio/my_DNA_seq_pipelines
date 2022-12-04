@@ -16,7 +16,7 @@ GATK FilterMutectCalls v4-4.2.2.0 was used to filter the raw output of Mutect2. 
 
 #### Ploidy and purity estimates
 
-Recalibrated BAM files from the 32 samples were used to estimate tumor cellularity and ploidy, and to calculate allele-specific copy number profiles with Sequenza v3.0.0 [Favero et al, 2015 ] (optional params low_ploidy=1, up_ploidy=7, cellularity=seq(low_cell, up_cell, 0.01) where low_cell is the sample cellularity estimated by the pathologist -20% and up_cell is the sample cellularity estimated by the pathology +20%).
+Recalibrated BAM files from the 32 samples were used to estimate tumor cellularity and ploidy, and to calculate allele-specific copy number profiles with Sequenza v3.0.0 [Favero et al, 2015 ] (optional params low_ploidy=1, up_ploidy=7, cellularity=seq(low_cell, up_cell, 0.01) where low_cell is the sample cellularity estimated by the pathologist -20% and up_cell is the sample cellularity estimated by the pathologist +20%).
 
 
 
