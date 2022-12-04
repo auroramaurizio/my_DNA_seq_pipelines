@@ -63,10 +63,9 @@ def get_rgidfromrun(run):
 
 rule all:
     input:
-     expand(["trimmed_N/{run}/{prj}/{pref}_R1.fastq.gz"], pref=SUFFIX.split(' '), prj=proj, run=runs.split(' ')),
+     # expand(["trimmed/{run}/{prj}/{pref}_R1.fastq.gz"], pref=SUFFIX.split(' '), prj=proj, run=runs.split(' ')),
      # expand(["MERGED/{run}/{prj}/{pref}_R1.fastq.gz","MERGED/{run}/{prj}/{pref}_R2.fastq.gz"], pref=SUFFIX.split(' '), prj=proj, run=runs.split(' '))
-     # expand(["MAF/{sample}_somatic.filtered.COSMIC.funcotator.maf"], sample=SAMPLELIST.split(' '))
-     #  expand(["qc/{run}/{prj}/{pref}"], pref=SUFFIX.split(' '), prj=proj, run=runs.split(' ')),
+     # expand(["qc/{run}/{prj}/{pref}"], pref=SUFFIX.split(' '), prj=proj, run=runs.split(' ')),
      # expand(["mapped/{run}/{prj}/{pref}.bam"], pref=SUFFIX.split(' '), prj=proj, run=runs.split(' ')),
      # expand(["sorted/{run}/{prj}/{pref}.bam"], pref=SUFFIX.split(' '), prj=proj, run=runs.split(' ')),
      # expand(["merged_bam/{pref}.bam"], pref=SUFFIX.split(' '), prj=proj, run=runs.split(' ')),
@@ -86,51 +85,11 @@ rule all:
      # expand(["FUNCOTATOR_clipOverlap/{sample}_somatic.filtered.COSMIC.funcotator.maf.gz"], sample=SAMPLELIST.split(' ')),
      # expand(["hsmetrics_clipOverlap/{pref}_hs_metrics.txt"], pref=SUFFIX.split(' ')),     
      # expand(["clipOverlap/{pref}_markdup.bam.bai"], pref=SUFFIX.split(' '))
-      expand(["VEP_clipOverlap/{sample}_somatic.filtered.COSMIC.funcotator.vep.vcf"], sample=SAMPLELIST.split(' ')),
-      expand(["MAF_clipOverlap/{sample}_somatic.filtered.COSMIC.funcotator.maf"], sample=SAMPLELIST.split(' '))
+     # expand(["VEP_clipOverlap/{sample}_somatic.filtered.COSMIC.funcotator.vep.vcf"], sample=SAMPLELIST.split(' ')),
+     # expand(["MAF_clipOverlap/{sample}_somatic.filtered.COSMIC.funcotator.maf"], sample=SAMPLELIST.split(' '))
 
 
 
-
-#rule samtools_merge:
-#    input:
-#        expand("sorted/{run}/{prj}/{{pref}}.bam",run=runs.split(' '), prj=proj, pref=SUFFIX.split(' '))
-#    output:
-#        "merged_bam/{pref}.bam"
-#    resources: time_min = 5000, mem_mb=25000, cpus = 32
-#    threads: 32
-#    shell:"""
-#        mkdir -p merged_bam
-#        samtools merge -@ {threads} {output} {input}
-#        """
-
-rule mergeFastq_after_trimming:
-    output:
-        R1 = "MERGED/{run}/{prj}/{pref}_R1.fastq.gz",
-        R2 = "MERGED/{run}/{prj}/{pref}_R2.fastq.gz"
-    resources: time_min = 500, mem_mb=2500, cpus = 2
-    shell: """
-        mkdir -p MERGED_FQ
-            cat {DATADIR_SHORT}/{wildcards.run}/{wildcards.prj}/{wildcards.pref}_S*_R1_001.fastq.gz > MERGED/{wildcards.pref}_R1.fastq.gz
-            cat {DATADIR_SHORT}/{wildcards.run}/{wildcards.prj}/{wildcards.pref}_S*_R2_001.fastq.gz > MERGED/{wildcards.pref}_R2.fastq.gz
-            touch {output.R1}
-            touch {output.R2}
-        """
-
-
-
-rule mergeFastq_test:
-    output:
-        R1 = "MERGED/{run}/{prj}/{pref}_R1.fastq.gz",
-        R2 = "MERGED/{run}/{prj}/{pref}_R2.fastq.gz"
-    resources: time_min = 500, mem_mb=2500, cpus = 2
-    shell: """
-        mkdir -p MERGED_FQ
-            cat {DATADIR_SHORT}/{wildcards.run}/{wildcards.prj}/{wildcards.pref}_S*_R1_001.fastq.gz > MERGED/{wildcards.pref}_R1.fastq.gz
-            cat {DATADIR_SHORT}/{wildcards.run}/{wildcards.prj}/{wildcards.pref}_S*_R2_001.fastq.gz > MERGED/{wildcards.pref}_R2.fastq.gz
-            touch {output.R1}
-            touch {output.R2}
-        """
 
 rule mergeFastq:
     output:
@@ -144,10 +103,12 @@ rule mergeFastq:
         """
 
 
+
+
 rule fastqc:
     input:
-        R1 = "trimmed/{run}/{prj}/{pref}_R1.fastq.gz",
-        R2 = "trimmed/{run}/{prj}/{pref}_R2.fastq.gz"
+        R1 = "MERGED_FQ/{run}/{prj}/{pref}_R1.fastq.gz",
+        R2 = "MERGED_FQ/{run}/{prj}/{pref}_R2.fastq.gz"
     output:
         directory("qc/{run}/{prj}/{pref}")
     params: ""
@@ -178,34 +139,27 @@ rule trimming:
     resources: time_min=50000, mem_mb=64000, cpus=32
     shell:"""
         mkdir -p trimmed
-        bbduk.sh -Xmx24g in={input.R1} in2={input.R2} out={output.R1} out2={output.R2} ref={input.adapters} k=23 mink=11 rcomp=t ktrim=f kmask=X qtrim=rl trimq=5 forcetrimleft=5 forcetrimright2=0  overwrite=true stats={log.main}  2> "{log.out}"
-
-       """
-
-
-
-
-
-rule trimming_N:
-    input:
-        R1="MERGED_FQ/{run}/{prj}/{pref}_R1.fastq.gz",
-        R2="MERGED_FQ/{run}/{prj}/{pref}_R2.fastq.gz",
-        adapters = "adapters-pe.fa"
-    output:
-        R1="trimmed_N/{run}/{prj}/{pref}_R1.fastq.gz",
-        R2="trimmed_N/{run}/{prj}/{pref}_R2.fastq.gz"
-    log:
-        main="trimmed_N/{run}/{prj}/{pref}_trim.log",
-        out="trimmed_N/{run}/{prj}/{pref}_trimout.log"
-    threads: 12
-    resources: time_min=50000, mem_mb=64000, cpus=32
-    shell:"""
-        mkdir -p trimmed
         bbduk.sh -Xmx24g in={input.R1} in2={input.R2} out={output.R1} out2={output.R2} ref={input.adapters} k=23 mink=11 rcomp=t ktrim=f kmask=N qtrim=rl trimq=5 forcetrimleft=5 forcetrimright2=0  overwrite=true stats={log.main}  2> "{log.out}"
 
        """
 
 
+
+rule fastqc_after_trimming:
+    input:
+        R1 = "trimmed/{run}/{prj}/{pref}_R1.fastq.gz",
+        R2 = "trimmed/{run}/{prj}/{pref}_R2.fastq.gz"
+    output:
+        directory("qc/{run}/{prj}/{pref}")
+    params: ""
+    log:
+        "logs/fastqc/{run}_{prj}_{pref}.log"
+    threads: 12
+    resources: time_min = 50000, mem_mb=25000, cpus = 32
+    shell:"""
+            mkdir -p "qc/{wildcards.run}/{wildcards.prj}/{wildcards.pref}"
+            fastqc -o {output} {input.R1} {input.R2}
+        """
 
 
 
@@ -244,6 +198,7 @@ rule samtools_sort_map:
         """
 
 
+
 rule samtools_merge:
     input:
         expand("sorted/{run}/{prj}/{{pref}}.bam",run=runs.split(' '), prj=proj, pref=SUFFIX.split(' '))
@@ -255,6 +210,8 @@ rule samtools_merge:
         mkdir -p merged_bam
         samtools merge -@ {threads} {output} {input}
         """
+
+
 
 rule rmdup_only_marked:
     input:
@@ -272,6 +229,7 @@ rule rmdup_only_marked:
        """
 
 
+
 rule samtools_sort_marked:
     input:
         "markdup/{pref}_markdup.bam"
@@ -284,6 +242,7 @@ rule samtools_sort_marked:
         """
 
 
+
 rule samtools_index_only_marked:
     input:
         BAM = "sorted/{pref}_markdup.bam"
@@ -294,7 +253,6 @@ rule samtools_index_only_marked:
         samtools index {input.BAM}
         touch {output}
         """
-
 
 
 
@@ -425,6 +383,7 @@ rule GatkMutect2:
         """
 
 
+
 rule genomics_db_import:
     input:
         samplenamemap = "cohort.sample_map",
@@ -442,6 +401,7 @@ rule genomics_db_import:
         """
 
 
+
 rule PON:
     input:
         args = "pon_dbs",
@@ -456,8 +416,6 @@ rule PON:
         export TILEDB_DISABLE_FILE_LOCKING=1
         gatk CreateSomaticPanelOfNormals -R {input.ref_fasta} -O {output.vcf} -V {params.args}
         """
-
-
 
 
 
@@ -482,6 +440,8 @@ rule Tumor_matched_Normal:
         export TILEDB_DISABLE_FILE_LOCKING=1
         gatk Mutect2 -R {input.ref_fasta} -I {input.tumor} -I {input.normal} -normal {params.normal} --germline-resource {params.germres} --dont-use-soft-clipped-bases true --panel-of-normals {input.pon} -O {output.vcf} --tmp-dir {params.tmpdir} --native-pair-hmm-threads 8
         """
+
+
 
 rule Annotat_Cosmic:
     input:
@@ -513,9 +473,12 @@ rule Annotat_Cosmic_filtered:
         zcat {input.vcf}| SnpSift annotate  -info "COSMIC" {params.cosmic} > {output.vcf}
         """
 
+
+
 ################################
 # filter mutect calls
 ################################
+
 
 
 rule Filter:
@@ -557,7 +520,6 @@ rule FuncotatorVCF:
 
 
 
-
 #################################
 # funcotator MAF
 ################################
@@ -577,44 +539,6 @@ rule FuncotatorMAF:
         export TILEDB_DISABLE_FILE_LOCKING=1
         gatk Funcotator --variant {input.vcf} --reference {input.genome} --ref-version hg38 --data-sources-path {params.funcotator} --remove-filtered-variants --verbosity DEBUG --output {output.vcf} --output-file-format MAF
         """
-
-#/beegfs/datasets/genomes/hg38/GATK_bundle_new/v0/Homo_sapiens_assembly38.fasta
-
-rule HsMetrics:
-    input:
-      BAM = "clipOverlap/{pref}_markdup.bam"
-    output:
-      HsMetrics = "hsmetrics_clipOverlap/{pref}_hs_metrics.txt"
-    params:
-      reference = "/beegfs/datasets/genomes/hg38/GATK_bundle_new/v0/Homo_sapiens_assembly38.fasta",
-      baits = "agilent_interval_list"
-    resources: time_min = 50000, mem_mb=50000, cpus = 32
-    shell:"""
-    mkdir -p hsmetrics_clipOverlap
-    picard CollectHsMetrics \
-      I={input.BAM} \
-      O={output.HsMetrics} \
-      R={params.reference} \
-      BAIT_INTERVALS={params.baits} \
-      TARGET_INTERVALS={params.baits}
-      """
-
-
-
-rule MQC:
-    params:
-        bcftools_stats = "bcftools_stats/",
-        qualimap = "qualimap/",
-        QC = "qc/",
-        PICARD = "markdup/",
-        HsMETRICS = "hsmetrics",
-    output: "MQC.done"
-    resources: time_min = 5000, mem_mb=12800, cpus = 16
-    shell:"""
-       multiqc {params.qualimap} {params.bcftools_stats} {params.HsMETRICS} {params.PICARD} {params.QC}
-       touch {output}
-       """
-
 
 
 
@@ -672,4 +596,41 @@ rule bcftools_stats:
         mkdir -p bcftools_stats
         bcftools stats -F {params.genome} --threads 6 -T {params.bed} {input.vep} > {output.stats}
         """
+
+
+rule HsMetrics:
+    input:
+      BAM = "clipOverlap/{pref}_markdup.bam"
+    output:
+      HsMetrics = "hsmetrics_clipOverlap/{pref}_hs_metrics.txt"
+    params:
+      reference = "/beegfs/datasets/genomes/hg38/GATK_bundle_new/v0/Homo_sapiens_assembly38.fasta",
+      baits = "agilent_interval_list"
+    resources: time_min = 50000, mem_mb=50000, cpus = 32
+    shell:"""
+    mkdir -p hsmetrics_clipOverlap
+    picard CollectHsMetrics \
+      I={input.BAM} \
+      O={output.HsMetrics} \
+      R={params.reference} \
+      BAIT_INTERVALS={params.baits} \
+      TARGET_INTERVALS={params.baits}
+      """
+
+
+
+rule MQC:
+    params:
+        bcftools_stats = "bcftools_stats/",
+        qualimap = "qualimap/",
+        QC = "qc/",
+        PICARD = "markdup/",
+        HsMETRICS = "hsmetrics",
+    output: "MQC.done"
+    resources: time_min = 5000, mem_mb=12800, cpus = 16
+    shell:"""
+       multiqc {params.qualimap} {params.bcftools_stats} {params.HsMETRICS} {params.PICARD} {params.QC}
+       touch {output}
+       """
+
 
