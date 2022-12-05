@@ -621,6 +621,11 @@ rule VEP:
 
 
 
+
+#################################
+# funcotator MAF
+################################
+rule FuncotatorMAF:
     input:
         genome = "/beegfs/datasets/genomes/hg38/GATK_bundle_new/v0/Homo_sapiens_assembly38.fasta",
         vep = "VEP_clipOverlap/{sample}_somatic.filtered.COSMIC.funcotator.vep.vcf"
@@ -637,30 +642,6 @@ rule VEP:
         conda deactivate'
         """
 
-
-
-
-
-#################################
-# funcotator MAF
-################################
-
-
-rule FuncotatorMAF:
-    input:
-        genome = "/beegfs/datasets/genomes/hg38/GATK_bundle_new/v0/Homo_sapiens_assembly38.fasta",
-        vcf = "COSMIC_clipOverlap/{sample}_somatic.filtered.COSMIC.vcf"
-    params:
-        funcotator = "/beegfs/scratch/ric.cosr/ric.cosr/DellabonaP/funcotator_dataSources.v1.7.20200521s"
-    output:
-        vcf = "FUNCOTATOR_clipOverlap/{sample}_somatic.filtered.COSMIC.funcotator.maf.gz"
-    resources: time_min=50000, mem_mb=128000, cpus=16
-    shell:
-        """
-        mkdir -p FUNCOTATOR_clipOverlap
-        export TILEDB_DISABLE_FILE_LOCKING=1
-        gatk Funcotator --variant {input.vcf} --reference {input.genome} --ref-version hg38 --data-sources-path {params.funcotator} --remove-filtered-variants --verbosity DEBUG --output {output.vcf} --output-file-format MAF
-        """
 
 
 
