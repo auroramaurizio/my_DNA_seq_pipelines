@@ -1,9 +1,8 @@
 #summarize maf
 
 #https://www.bioconductor.org/packages/devel/bioc/vignettes/maftools/inst/doc/maftools.html
-#library("CNAqc")
-require(dplyr) 
-require(vcfR) 
+library(maftools) 
+
 
 
 #MAF_DellabonaP_1560_1561_WES
@@ -34,7 +33,10 @@ MAF_DellabonaP_1560_1561_WES = c(ESOCA35, ESOCA37, ESOCA39, ESOCA40, ESOCA41,
 merge_DellabonaP_1560_1561_WES = maftools:::merge_mafs(MAF_DellabonaP_1560_1561_WES)
 
 laml.maf = merge_DellabonaP_1560_1561_WES 
+#Shows sample summary.
 getSampleSummary(laml.maf)
+#Shows gene summary.
+getGeneSummary(laml)
 
 
 pdf("plotmafSummary_MAF_DellabonaP_1560_1561_WES_clip.pdf")

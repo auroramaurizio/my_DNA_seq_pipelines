@@ -1,9 +1,7 @@
 #summarize maf
 
 #https://www.bioconductor.org/packages/devel/bioc/vignettes/maftools/inst/doc/maftools.html
-#library("CNAqc")
-require(dplyr) 
-require(vcfR) 
+library(maftools)
 
 
 
@@ -26,13 +24,17 @@ MAF_DellabonaP_1153_NeoAg_esophagusK = c(ESOCA20, ESOCA22, ESOCA24, ESOCA25, ESO
 
 
 
-merge_DellabonaP_1560_1561_WES = maftools:::merge_mafs(MAF_DellabonaP_1153_NeoAg_esophagusK)
+merge_DellabonaP_1153_NeoAg_esophagusK = maftools:::merge_mafs(MAF_DellabonaP_1153_NeoAg_esophagusK)
 
-laml.maf = merge_DellabonaP_1560_1561_WES 
+laml.maf = merge_DellabonaP_1153_NeoAg_esophagusK 
+#Shows sample summary.
 getSampleSummary(laml.maf)
+#Shows gene summary.
+getGeneSummary(laml)
 
 
-pdf("plotmafSummary_MAF_DellabonaP_1560_1561_WES_clip.pdf")
+
+pdf("plotmafSummary_MAF_DellabonaP_1153_NeoAg_esophagusK.pdf")
 plotmafSummary(maf = laml.maf, rmOutlier = FALSE, addStat = 'median', dashboard = TRUE, titvRaw = FALSE, showBarcodes = T)
 dev.off()
 
