@@ -8,3 +8,6 @@ If T and N (e.g. paracancerous tissue or blood) samples belong to the same indiv
 
 ![Example](Pictures/KASP.png)
 *Example of 3 matching SNPs in T and N samples*
+
+
+An alternative that works for WGS, WES but also for RNA-Seq, Chip-Seq, Targeted sequencing etc. is https://github.com/parklab/NGSCheckMate. 
