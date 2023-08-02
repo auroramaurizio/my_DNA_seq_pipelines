@@ -59,8 +59,8 @@ rule all:
         #expand(["sorted/{pref}_markdup_only_marked.bam"], pref=SUFFIX.split(' ')),
         expand(["CF/{pat}/plot_CNV_flat_logratio_{pat}.pdf"], pat=PATIENT.split(' ')),
         expand(["CF/{pat}/plot_CNV_{pat}.pdf"], pat=PATIENT.split(' ')),
-        expand(["CF/{pref}/plot_Lc_{pref}.pdf"], pref=SUFFIX.split(' '))
-
+        expand(["CF/{pref}/plot_Lc_{pref}.pdf"], pref=SUFFIX.split(' ')),
+        expand(["CF/{pref}/{pref}_calls.txt"], pref=SUFFIX.split(' '))
 
 
 
@@ -92,22 +92,50 @@ rule fastqc:
         fastqc -o {output} {input.R1} {input.R2}
         """
 
-rule map:
+rule trimming:
     input:
-        R1 = "MERGED/{pref}_R1.fastq.gz",
-        R2 = "MERGED/{pref}_R2.fastq.gz",
-        reference = "/beegfs/datasets/buffer/ric.cosr/GRCh38_Verily_AM/GRCh38_Verily/bwa-0.7.12/GRCh38_Verily_v1.genome.fa"
+        R1="MERGED/{pref}_R1.fastq.gz",
+        R2="MERGED/{pref}_R2.fastq.gz",
+        adapters = "adapters-pe.fa"
     output:
-        "mapped/{pref}.bam"
-    threads: 72
-    resources: time_min=50000, mem_mb=250000, cpus=72
+        R1="trimmed/{pref}_R1.fastq.gz",
+        R2="trimmed/{pref}_R2.fastq.gz"
+    log:
+        main="trimmed/{pref}_trim.log",
+        out="trimmed/{pref}_trimout.log"
+    threads: 12
+    resources: time_min=50000, mem_mb=25000, cpus=32
     shell:"""
-       mkdir -p mapped
-       bwa mem -t 72 {input.reference} {input.R1} {input.R2}  | samtools view -Sb > {output}
-       #bwa mem -t 72 -K 10000000 -R '@RG\\tID:{wildcards.pref}_rg1\\tLB:lib1\\tPL:bar\\tSM:{wildcards.pref}\\tPU:{wildcards.pref}_rg1' \
-       {input.reference} {input.R1} {input.R2} | samtools view -Sb > {output}
+        mkdir -p trimmed
+        bbduk.sh -Xmx24g in={input.R1} in2={input.R2} out={output.R1} out2={output.R2} ref={input.adapters} k=23 mink=11 rcomp=t ktrim=f kmask=X qtrim=rl trimq=5 forcetrimleft=15 forcetrimright2=0  overwrite=true stats={log.main}  2> "{log.out}"
 
        """
+
+
+
+
+rule map:
+    input:
+        R1 = "trimmed/{pref}_R1.fastq.gz",
+        R2 = "trimmed/{pref}_R2.fastq.gz",
+        reference = "/beegfs/datasets/buffer/ric.cosr/GRCh38_Verily_AM/GRCh38_Verily/bwa-0.7.12/GRCh38_Verily_v1.genome.fa"
+    params:
+        id = lambda wildcards: get_rgidfromrun(f"220928_A00626_0506_AHGFY2DRX2"),
+        pu=lambda wildcards: f"220928_A00626_0506_AHGFY2DRX2.{wildcards.pref}",
+        sm=lambda wildcards: f"{wildcards.pref}",
+        pl="NextSeq500"
+    output:
+        "mapped/{pref}.bam"
+    threads: 18
+    resources: time_min=50000, mem_mb=25000, cpus=32
+    shell:"""
+
+       bwa mem -t 18 -M -R '@RG\\tID:{params.id}.{params.sm}\\tPL:{params.pl}\\tPU:{params.pu}\\tSM:{params.sm}\\tLB:{params.id}.{params.sm}\\tCN:COSR\\tSO:unsorted' {input.reference} {input.R1} {input.R2} | samtools view -Sb > {output}
+
+       """
+
+
+
 
 
 rule samtools_sort_map:
@@ -314,12 +342,34 @@ rule CONTROL_FREEC_plot_flat_logratio:
         . $HOME/.bashrc
         conda activate PLOT
         if [ `cat {input.PV_filtered} | wc -l` -gt 1 ] ; then
-            cat plot_flat_ratio_new.R | R --slave --args {input.ratio} {input.PV_filtered} {output} {wildcards.pat}
+            cat plot_flat_ratio.R | R --slave --args {input.ratio} {input.PV_filtered} {output} {wildcards.pat}
             rm "CF/{wildcards.pat}/number_of_cnvs_in_{wildcards.pat}"
         else
             touch {output}
             rm "CF/{wildcards.pat}/number_of_cnvs_in_{wildcards.pat}"
             touch "CF/{wildcards.pat}/number_of_filtered_cnvs_in_{wildcards.pat}"
+        fi
+        conda deactivate'
+        """
+
+
+
+rule kp_info:
+    input:
+        PV_filtered = "CF/{pref}/{pref}_markdup.bam_CNVs.p.value.filtered.txt",
+        ratio = "CF/{pref}/{pref}_markdup.bam_ratio.txt"
+    output:
+        "CF/{pref}/{pref}_calls.txt"
+    resources: time_min = 50000, mem_mb=12800, cpus = 16
+    shell:"""
+        bash -c '
+        . $HOME/.bashrc
+        conda activate PLOT
+        if [ `cat {input.PV_filtered} | wc -l` -gt 1 ] ; then
+            cat /beegfs/scratch/ric.cosr/ric.cosr/Menarini/plot_flat_ratio.R | R --slave --args {input.ratio} {input.PV_filtered} {output} {wildcards.pref}
+            rm "CF/{wildcards.pref}/number_of_cnvs_in_{wildcards.pref}"
+        else
+            touch {output}
         fi
         conda deactivate'
         """
