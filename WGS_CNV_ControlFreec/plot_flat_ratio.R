@@ -7,8 +7,9 @@ args <- commandArgs()
 df_ratio <-read.table(args[4], header=TRUE);
 df_cnv <-read.table(args[5], header=TRUE);
 
-out <- args[6]
-title <- args[7]
+out_txt <- args[6]
+out_pdf <- args[7]
+title <- args[8]
 
 
 ############################
@@ -68,14 +69,14 @@ unique(df_cnv$cn)
 CNV.calls <- loadCopyNumberCalls(dftest_cnv)
 
 ##############
-write.table(CNV.calls, file = out, append = FALSE, quote = FALSE, sep = "\t",
+write.table(CNV.calls, file = out_txt, append = FALSE, quote = FALSE, sep = "\t",
             eol = "\n", na = "NA", dec = ".", row.names = FALSE,
             col.names = TRUE)
 
 # print the plot
 # gains reddish
 # lossed bluish
-pdf(out, 30, 5)
+pdf(out_pdf, 30, 5)
 kp <- plotKaryotype(chromosomes=c("chr1", "chr2", "chr3", "chr4", "chr5", "chr6", "chr7", "chr8", "chr9", "chr10","chr11","chr12","chr13","chr14","chr15","chr16","chr17","chr18","chr19","chr20","chr21","chr22"), plot.type = 4, main = title)
 #plotLRR(kp, snps=s1)
 

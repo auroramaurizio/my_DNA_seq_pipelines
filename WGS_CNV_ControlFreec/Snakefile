@@ -330,27 +330,28 @@ rule CONTROL_FREEC_plot:
         """
 
 
-rule CONTROL_FREEC_plot_flat_logratio:
-    input:
-        PV_filtered = "CF/{pat}/{pat}_DNA_markdup.bam_CNVs.p.value.filtered.txt",
-        ratio = "CF/{pat}/{pat}_DNA_markdup.bam_ratio.txt"
-    output:
-        "CF/{pat}/plot_CNV_flat_logratio_{pat}.pdf"
-    resources: time_min = 50000, mem_mb=128000, cpus = 16
-    shell:"""
-        bash -c '
-        . $HOME/.bashrc
-        conda activate PLOT
-        if [ `cat {input.PV_filtered} | wc -l` -gt 1 ] ; then
-            cat plot_flat_ratio.R | R --slave --args {input.ratio} {input.PV_filtered} {output} {wildcards.pat}
-            rm "CF/{wildcards.pat}/number_of_cnvs_in_{wildcards.pat}"
-        else
-            touch {output}
-            rm "CF/{wildcards.pat}/number_of_cnvs_in_{wildcards.pat}"
-            touch "CF/{wildcards.pat}/number_of_filtered_cnvs_in_{wildcards.pat}"
-        fi
-        conda deactivate'
-        """
+#rule CONTROL_FREEC_plot_flat_logratio:
+#    input:
+#        PV_filtered = "CF/{pat}/{pat}_DNA_markdup.bam_CNVs.p.value.filtered.txt",
+#        ratio = "CF/{pat}/{pat}_DNA_markdup.bam_ratio.txt"
+#    output:
+#        "CF/{pat}/plot_CNV_flat_logratio_{pat}.pdf"
+#    resources: time_min = 50000, mem_mb=128000, cpus = 16
+#    shell:"""
+#        bash -c '
+#        . $HOME/.bashrc
+#        conda activate PLOT
+#        if [ `cat {input.PV_filtered} | wc -l` -gt 1 ] ; then
+#            cat plot_flat_ratio.R | R --slave --args {input.ratio} {input.PV_filtered} {output} {wildcards.pat}
+#            rm "CF/{wildcards.pat}/number_of_cnvs_in_{wildcards.pat}"
+#        else
+#            touch {output}
+#            rm "CF/{wildcards.pat}/number_of_cnvs_in_{wildcards.pat}"
+#            touch "CF/{wildcards.pat}/number_of_filtered_cnvs_in_{wildcards.pat}"
+#        fi
+#        conda deactivate'
+#        """
+
 
 
 
@@ -359,14 +360,15 @@ rule kp_info:
         PV_filtered = "CF/{pref}/{pref}_markdup.bam_CNVs.p.value.filtered.txt",
         ratio = "CF/{pref}/{pref}_markdup.bam_ratio.txt"
     output:
-        "CF/{pref}/{pref}_calls.txt"
+       txt = "CF/{pref}/{pref}_calls.txt",
+       pdf = "CF/{pat}/plot_CNV_flat_logratio_{pat}.pdf"
     resources: time_min = 50000, mem_mb=12800, cpus = 16
     shell:"""
         bash -c '
         . $HOME/.bashrc
         conda activate PLOT
         if [ `cat {input.PV_filtered} | wc -l` -gt 1 ] ; then
-            cat /beegfs/scratch/ric.cosr/ric.cosr/Menarini/plot_flat_ratio.R | R --slave --args {input.ratio} {input.PV_filtered} {output} {wildcards.pref}
+            cat plot_flat_ratio.R | R --slave --args {input.ratio} {input.PV_filtered} {output.txt} {output.pdf} {wildcards.pat}
             rm "CF/{wildcards.pref}/number_of_cnvs_in_{wildcards.pref}"
         else
             touch {output}
