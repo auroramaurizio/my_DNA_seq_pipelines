@@ -395,9 +395,29 @@ rule Gini:
         conda deactivate'
         """
 
+# prepare input for gistic
+rule freec2bed:
+    input:
+        ratio = "CF/{pref}/{pref}_markdup.bam_ratio.txt"
+    output:
+        "CF/bed/{pref}_freec_segments.bed"
+    resources: time_min = 50000, mem_mb=12800, cpus = 16
+    shell:"""
+        mkdir -p "CF/bed"
+        freec2bed.pl -f {input.ratio} > {output}
+        """
 
-
-
+#prepare input for gistic
+rule copy_files:
+    input:
+        cpn = "CF/{pref}/{pref}_markdup.bam_sample.cpn"
+    output:
+        "CF/cpn/{pref}_markdup.bam_sample.cpn"
+    resources: time_min = 50000, mem_mb=12800, cpus = 16
+    shell:"""
+        mkdir -p "CF/cpn"
+        cp {input.cpn} {output}
+        """
 
 rule MQC:
     params:
