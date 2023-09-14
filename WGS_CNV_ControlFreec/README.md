@@ -1,4 +1,4 @@
-# WGS with Control Freec #
+# scWGS #
 
 
 
