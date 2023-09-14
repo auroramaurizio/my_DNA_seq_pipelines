@@ -43,6 +43,10 @@ Ewels, Philip, et al. "MultiQC: summarize analysis results for multiple tools an
 
  
 
+Köster, Johannes, and Sven Rahmann. "Snakemake—a scalable bioinformatics workflow engine." Bioinformatics 28.19 (2012): 2520-2522.
+
+
+
 Li, Heng. "Aligning sequence reads, clone sequences and assembly contigs with BWA-MEM." arXiv preprint arXiv:1303.3997 (2013). 
 
  
@@ -79,5 +83,5 @@ Wood, Derrick E., Jennifer Lu, and Ben Langmead. "Improved metagenomic analysis 
 
  
 
- 
+Zeileis, Achim, Christian Kleiber, and Maintainer Achim Zeileis. "Package ‘ineq’." Tech. Rep. (2009). 
 
