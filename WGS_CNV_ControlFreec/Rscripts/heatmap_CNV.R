@@ -3,6 +3,26 @@ library(stringr)
 library(pheatmap)
 library("ggplot2")
 
+
+# prepare the ControlFreeC input for the heatmap
+
+###########################################################################
+
+touch merged.txt
+
+# Loop through the files, concatenate, and add the prefix name
+for file in *_*_markdup.bam_CNVs.p.value.filtered.txt; do
+  # Extract the prefix name (everything before the second underscore)
+  prefix_name=$(echo "$file" | awk -F_ '{print $1"_"$2}')
+  
+  # Concatenate the file and add the prefix name as a new column
+  awk -v prefix="$prefix_name" '{print prefix, $0}' "$file" >> merged.txt
+done
+
+############################################################################
+
+
+
 #------------
 # FUNCTIONS -------------
 #-------------------------------
