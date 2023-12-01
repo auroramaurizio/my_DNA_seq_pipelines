@@ -19,6 +19,9 @@ for file in *_*_markdup.bam_CNVs.p.value.filtered.txt; do
   awk -v prefix="$prefix_name" '{print prefix, $0}' "$file" >> merged.txt
 done
 
+grep -v "#" merged.txt > combined.txt
+# then remove useless columns and rename them so that you have:
+chr	Start	End	CNV	P	Sample	Group	Rep
 ############################################################################
 
 
