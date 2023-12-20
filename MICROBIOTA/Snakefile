@@ -1,0 +1,331 @@
+import sys
+import logging
+from snakemake.io import glob_wildcards, expand
+import glob,os
+import pathlib
+import csv
+import pandas as pd
+import numpy as np
+
+# directory containing raw fastq files
+DATADIR_SHORT="/path/to/dir/"
+
+# sample ids
+SAMPLE_LIST_DIR = os.listdir(DATADIR_SHORT)
+
+SAMPLELIST = []
+
+SUFF = []
+SAMPLELIST = []
+for file in SAMPLE_LIST_DIR:
+    A = file.split("_")[0]
+    B = file.split("_")[1]
+    C = A + '_' + B
+    SUFF.append(C)
+    SAMPLELIST.append(A)
+
+
+SAMPLELIST=set(SAMPLELIST)
+SUFF=set(SUFF)
+
+SUFFIX = ' '.join(map(str, SUFF))
+print(SUFFIX)
+
+PATIENTS = ' '.join(map(str, SAMPLELIST))
+print("PATIENTS",PATIENTS)
+
+print("PATIENTS",PATIENTS)
+print("SUFFIX",SUFFIX)
+
+# rgfield
+def get_rgidfromrun(run):
+    return str(run.split("_")[3])
+
+
+# create logs_slurm directory
+path = "logs_slurm"
+try:
+    os.mkdir(path)
+except OSError:
+    print ("Creation of the directory %s failed" % path)
+else:
+    print ("Successfully created the directory %s " % path)
+
+
+
+# activate a conda environment containing snakemake and the bioinfo tools needed  
+# then run from the same folder in which the Snakefile is present doing:
+# snakemake --profile slurm --use-conda -n
+# no config file is needed for simplicity but if you want you can create one for tidiness
+# to get the MQC aggregated reports do:
+# snakemake --profile slurm --use-conda -R MQC_ALL
+# snakemake --profile slurm --use-conda -R MQC_SUB
+
+
+
+rule all:
+    input:
+        expand(["qc/{pref}"], pref=SUFFIX.split(' ')),
+        expand(["BRACKEN_ALL/{pref}_kraken2.log"], pref=SUFFIX.split(' ')),
+        expand(["BRACKEN_SUB/{pref}_kraken2.log"], pref=SUFFIX.split(' ')),
+        expand(["qualimap/{pref}"], pref=SUFFIX.split(' ')),
+
+
+# merge fastqs from different lanes in the same run
+rule mergeFastq:
+    output:
+        R1 = "MERGED/{pref}_R1.fastq.gz",
+        R2 = "MERGED/{pref}_R2.fastq.gz"
+    params: DATADIR_SHORT
+    resources: time_min = 500, mem_mb=2500, cpus = 2
+    shell: """
+        mkdir -p MERGED
+        cat {params}/{wildcards.pref}_S*_R1_001.fastq.gz > {output.R1}
+        cat {params}/{wildcards.pref}_S*_R2_001.fastq.gz > {output.R2}
+        """
+
+# trimming
+rule trimming:
+    input:
+        R1="MERGED/{pref}_R1.fastq.gz",
+        R2="MERGED/{pref}_R2.fastq.gz",
+        adapters = "adapters-pe.fa"
+    output:
+        R1="trimmed/{pref}_R1.fastq.gz",
+        R2="trimmed/{pref}_R2.fastq.gz"
+    log:
+        main="trimmed/{pref}_trim.log",
+        out="trimmed/{pref}_trimout.log"
+    threads: 12
+    resources: time_min=50000, mem_mb=25000, cpus=32
+    shell:"""
+        mkdir -p trimmed
+        bbduk.sh -Xmx24g in={input.R1} in2={input.R2} out={output.R1} out2={output.R2} ref={input.adapters} k=23 mink=11 rcomp=t ktrim=f kmask=X qtrim=rl trimq=5 forcetrimleft=15 forcetrimright2=0  overwrite=true stats={log.main}  2> "{log.out}"
+       """
+
+# quality check
+rule fastqc:
+    input:
+        R1 = "MERGED/{pref}_R1.fastq.gz",
+        R2 = "MERGED/{pref}_R2.fastq.gz"
+    output:
+        directory("qc/{pref}")
+    params: ""
+    log:
+        "logs/fastqc/{pref}.log"
+    threads: 12
+    resources: time_min = 50000, mem_mb=25000, cpus = 32
+    shell:"""
+        mkdir -p "qc/{wildcards.pref}"
+        fastqc -o {output} {input.R1} {input.R2}
+        """
+
+# mapping
+rule map:
+    input:
+        R1 = "trimmed/{pref}_R1.fastq.gz",
+        R2 = "trimmed/{pref}_R2.fastq.gz",
+        reference = "/beegfs/datasets/buffer/ric.cosr/GRCh38_Verily_AM/GRCh38_Verily/bwa-0.7.12/GRCh38_Verily_v1.genome.fa"
+    params:
+        id = lambda wildcards: get_rgidfromrun(f"220928_A00626_0506_AHGFY2DRX2"),
+        pu=lambda wildcards: f"220928_A00626_0506_AHGFY2DRX2.{wildcards.pref}",
+        sm=lambda wildcards: f"{wildcards.pref}",
+        pl="NextSeq500"
+    output:
+        "mapped/{pref}.bam"
+    threads: 18
+    resources: time_min=50000, mem_mb=25000, cpus=32
+    shell:"""
+
+       bwa mem -t 18 -M -R '@RG\\tID:{params.id}.{params.sm}\\tPL:{params.pl}\\tPU:{params.pu}\\tSM:{params.sm}\\tLB:{params.id}.{params.sm}\\tCN:COSR\\tSO:unsorted' {input.reference} {input.R1} {input.R2} | samtools view -Sb > {output}
+
+       """
+
+# sorting
+rule samtools_sort_map:
+    input:
+        "mapped/{pref}.bam"
+    output:
+        "sorted/{pref}_sorted.bam"
+    resources: time_min = 5000, mem_mb=25000, cpus = 32
+    shell:"""
+        mkdir -p sorted
+        samtools sort {input} -o {output}
+        """
+
+# create bai
+rule samtools_index:
+    input:
+        BAM = "sorted/{pref}_sorted.bam"
+    output:
+        "sorted/{pref}_sorted.bam.bai"
+    resources: time_min = 500, mem_mb=25000, cpus = 32
+    shell:"""
+        samtools index {input.BAM}
+        touch {output}
+        """
+
+# convert to fastq
+rule unmapped:
+    input:
+        BAM = "sorted/{pref}_sorted.bam"
+    output:
+        BAM = "unmapped/{pref}_unmapped.bam",
+    resources: time_min = 500, mem_mb=25000, cpus = 32
+    shell:"""
+        mkdir -p unmapped
+        samtools view -b -f 4 {input.bam} > {output.bam}
+        """
+
+# isolate unmapped reads
+rule unmapped_fq:
+    input:
+        BAM = "unmapped/{pref}_unmapped.bam"
+    output:
+        R1 = "unmapped_fq/{pref}_R1.fastq",
+        R2 = "unmapped_fq/{pref}_R2.fastq"
+    resources: time_min = 500, mem_mb=25000, cpus = 32
+    shell:"""
+        mkdir -p unmapped_fq
+        samtools fastq -1 {output.R1} -2 {output.R2} -n {input.BAM}
+        """
+
+rule markdup:
+    input:
+        "sorted/{pref}_sorted.bam"
+    output:
+        reads = "markdup/{pref}_markdup_only_marked.bam",
+        metrics = "markdup/{pref}_markdup_metrics.log"
+    resources: time_min=5000, mem_mb=25000, cpus=32
+    shell:"""
+       mkdir -p markdup
+       picard MarkDuplicates REMOVE_DUPLICATES=false\
+       I={input} \
+       O={output.reads} \
+       M={output.metrics}
+       """
+
+# check quality of mapped reads
+rule qualimap:
+    input:
+        "markdup/{pref}_markdup_only_marked.bam"
+    output:
+        directory("qualimap/{pref}")
+    resources: time_min = 50000, mem_mb=50000, cpus = 32
+    shell:"""
+        mkdir -p "qualimap/{wildcards.pref}"
+        qualimap --java-mem-size=50000M  bamqc -c -bam {input} -outdir {output} 
+        """
+
+# https://github.com/jenniferlu717/Bracken
+# pro tip
+# if you install bracken with conda 
+# fix the folder tree before building the database
+# create a folder src inside /bracken/bin
+# and move in src kmer2read_distr and generate_kmer_distribution.py files 
+rule build_bracken_db:
+    input:
+        db = "/beegfs/scratch/ric.cosr/ric.cosr/Menarini/KRAKENDB/HumanMouseRatRabbitBosVirusBacteria/"
+    output:
+        "all_done.txt"
+    resources: time_min = 50000, mem_mb=128000, cpus = 20
+    shell:"""
+        bash -c '
+        . $HOME/.bashrc
+        conda activate bracken
+        bracken-build -d {input.db} -t 20 -k 35 -l 100
+        conda deactivate'
+        """
+
+# check human /microbial read fraction in each sample (all reads)
+rule kraken_ALL:
+    input:
+        R1 = "trimmed/{pref}_R1.fastq.gz"
+    output:"KRAKEN_ALL/{pref}_kraken2.log"
+    params:
+        db= "/beegfs/scratch/ric.cosr/ric.cosr/Menarini/KRAKENDB/HumanMouseRatRabbitBosVirusBacteria/"
+    threads: 32
+    resources: time_min = 50000, mem_mb=128000, cpus = 32
+    shell: """
+       mkdir -p KRAKEN_ALL
+       kraken2 --db {params.db} --threads {threads} --use-names --gzip-compressed --report {output} {input.R1}
+       """
+
+# bracken
+rule bracken_ALL:
+    input:"KRAKEN_ALL/{pref}_kraken2.log"
+    output:"BRACKEN_ALL/{pref}.bracken"
+    params:
+        db= "/beegfs/scratch/ric.cosr/ric.cosr/Menarini/KRAKENDB/HumanMouseRatRabbitBosVirusBacteria/"
+    threads: 32
+    resources: time_min = 50000, mem_mb=128000, cpus = 32
+    shell: """
+       bash -c '
+       . $HOME/.bashrc
+       conda activate bracken
+       mkdir -p BRACKEN_ALL
+       bracken -d {params.db} -i {input} -o {output} -r 100 -l 10 -t 10
+       conda deactivate
+       """
+
+# go in detail with microbial fraction carachterization (only reads not mapping over the human genome)
+rule kraken_SUB:
+    input:
+        R1 = "unmapped_fq/{pref}_R1.fastq.gz"
+    output:"KRAKEN_SUB/{pref}_kraken2.log"
+    params:
+        db= "/beegfs/scratch/ric.cosr/ric.cosr/Menarini/KRAKENDB/HumanMouseRatRabbitBosVirusBacteria/"
+    threads: 32
+    resources: time_min = 50000, mem_mb=128000, cpus = 32
+    shell: """
+       mkdir -p KRAKEN_SUB
+       kraken2 --db {params.db} --threads {threads} --use-names --gzip-compressed --report {output} {input.R1}
+       """
+
+# bracken
+rule bracken_SUB:
+    input:KRAKEN_SUB/{pref}_kraken2.log
+    output:"BRACKEN_SUB/{pref}.bracken"
+    params:
+        db= "/beegfs/scratch/ric.cosr/ric.cosr/Menarini/KRAKENDB/HumanMouseRatRabbitBosVirusBacteria/"
+    threads: 32
+    resources: time_min = 50000, mem_mb=128000, cpus = 32
+    shell: """
+       bash -c '
+       . $HOME/.bashrc
+       conda activate bracken
+       mkdir -p BRACKEN_SUB
+       bracken -d {params.db} -i {input} -o {output} -r 100 -l 10 -t 10
+       conda deactivate
+       """
+
+# collect the results in a unique report
+rule MQC_ALL:
+    params:
+        qualimap = "qualimap/",
+        KRAKEN = "KRAKEN_ALL/",
+        BRACKEN = "BRACKEN_ALL/",
+        QC = "qc/",
+        PICARD = "markdup/"
+    output: "MQC.done"
+    resources: time_min = 5000, mem_mb=12800, cpus = 16
+    shell:"""
+       multiqc {params.KRAKEN_ALL} {params.BRACKEN_ALL} {params.QC} {params.PICARD} {params.qualimap} 
+       touch {output}
+       """
+
+# collect the results in a unique report
+rule MQC_SUB:
+    params:
+        KRAKEN = "KRAKEN_SUB/",
+        BRACKEN = "BRAKEN_SUB/",
+    output: "MQC.done"
+    resources: time_min = 5000, mem_mb=12800, cpus = 16
+    shell:"""
+       multiqc {params.KRAKEN_SUB} {params.BRACKEN_SUB}
+       touch {output}
+       """
+
+# you can also use pavian to visualize kraken output interactively: https://github.com/fbreitwieser/pavian
+ 
+# further potential steps: read assembly with spades and blast double check of prevoltella sequences
