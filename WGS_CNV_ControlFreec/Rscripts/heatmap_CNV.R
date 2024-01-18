@@ -214,4 +214,108 @@ dev.off()
 
 
 
+################# heatmap not clustered by column ############
+
+cnv <- read.xlsx("/Users/maurizio.aurora/CNV_ECRIN.xlsx")
+cnv <- cnv[!grepl("X", cnv$chr), ]
+cnv <- cnv[!grepl("Y", cnv$chr), ]
+ratios <- read.table("/Users/maurizio.aurora/ratios_ECRIN.txt", header = F)
+ratios <- ratios[!grepl("Chromosome", ratios$V1), ]
+colnames(ratios) = c("Chromosome","Start","Ratio","MedianRatio","CopyNumber")
+cnv$chr <- as.numeric(cnv$chr)
+cnv$P <- as.numeric(cnv$P)
+unique(ratios$Chromosome)
+#ratios = ratios[!grepl("X", ratios$Chromosome), ]
+ratios = ratios[!grepl("Y", ratios$Chromosome), ]
+ratios = ratios[!grepl("M", ratios$Chromosome), ]
+ratios$Start <- as.numeric(ratios$Start)
+
+cnv$Start <- as.numeric(cnv$Start)
+cnv$End <- as.numeric(cnv$End)
+cnv_01 <- cnvPfilt(cnv, ratios, P_threshold = 0.01, binSize = 1e6)
+
+metadata <- read.xlsx("/Users/maurizio.aurora/ECRIN_metadata.xlsx")
+combine <- merge(cnv,metadata, by = "Group", all.x = TRUE)
+combined <- unique(combine[,c("Sample","Group","Disease", "Sex")])
+unique(combined$Group)
+combined <- combined[order(factor(combined$Group, levels=unique(metadata$Group))),]
+unique(combined$Group)
+
+
+cnv_01_o <- cnv_01[, rownames(combined)]
+rownames(combined) = combined$Sample
+combined <- combined[,c("Group","Disease", "Sex")]
+colnames(combined)<- c("Patient","Disease", "Sex")
+combined$Sex <- factor(combined$Sex,
+                       levels=c("M", "F", "UNK"))
+
+combined$Disease <- factor(combined$Disease,
+                           levels=c("MBL", "CLL"))
+
+combined$Patient <- factor(combined$Patient,
+                           levels=c("670CR",
+                                    "798GI",
+                                    "440MB",
+                                    "418FR",
+                                    "283OA",
+                                    "804CA",
+                                    "428LM",
+                                    "742RP",
+                                    "736TG",
+                                    "778GF",
+                                    "644MD"))
+
+
+annotation_colors = list(
+  Patient = c("670CR" = "#CC00CC",
+              "798GI" = "#FFFF99",
+              "440MB" = "#00CCCC",
+              "418FR" = "#CCCC00",
+              "283OA" = "#CC0000",
+              "804CA" = "grey",
+              "428LM" = "#00CC00",
+              "742RP" = "#FF99FF",
+              "736TG" = "#606060",
+              "778GF" = "#CCFFFF",
+              "644MD" = "#0000CC"),
+  Disease = c("MBL"="orange", "CLL"="red"),
+  Sex = c("F"="pink", "M"="lightblue"))
+
+
+
+cnvPlotss <- function(cnv_mat, chrNames = c(1:22,'X'), ...) {
+  # obtain chromosomes relative to each row
+  row_chromosome <- sapply(strsplit(rownames(cnv_mat), '-'),'[',1)
+  # select only rows corresponding to selected chrNames
+  idx <- row_chromosome %in% chrNames
+  cnv_mat <- cnv_mat[idx,]
+  row_chromosome <- row_chromosome[idx]
+  #------
+  ann_row <- data.frame(Chr=factor(row_chromosome, levels = chrNames), 
+                        row.names = rownames(cnv_mat))
+  #------
+  pheatmap(cnv_mat, cluster_rows = F,
+           annotation_row = ann_row,
+           cluster_cols = F,
+           annotation_cols = combined,
+           annotation_colors = annotation_colors,
+           show_rownames = F,
+           gaps_row = cumsum(table(ann_row$Chr)), ...)
+}
+
+
+
+cnv_01_o <- cnv_01[, rownames(combined)]
+ph_cor_cnv_01_1e6aaa <- cnvPlotss(cnv_01_o, 
+                                 annotation_col = combined, 
+                                 main = 'CNV',
+                                 breaks = seq(0,6,length.out=101),
+                                 legend=TRUE,
+                                 annotation_legend=TRUE)
+
+pdf("Heatmap__ECRIN_patient_samp_ordsss.pdf", 24, 24)
+ph_cor_cnv_01_1e6aaa
+dev.off()
+
+
 
