@@ -239,8 +239,11 @@ combine <- merge(cnv,metadata, by = "Group", all.x = TRUE)
 combined <- unique(combine[,c("Sample","Group","Disease", "Sex")])
 unique(combined$Group)
 combined <- combined[order(factor(combined$Group, levels=unique(metadata$Group))),]
-unique(combined$Group)
 
+#unique(combined$Group)
+#library(dplyr)
+#combined <- combined %>%
+#  arrange(match(Group, metadata$Group))
 
 cnv_01_o <- cnv_01[, rownames(combined)]
 rownames(combined) = combined$Sample
