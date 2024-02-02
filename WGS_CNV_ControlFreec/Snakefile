@@ -284,6 +284,44 @@ rule CONTROL_FREEC:
         """
 
 
+
+
+#rule CONTROL_FREEC:
+#    input:
+#        BAM = "sorted/{pref}_markdup.bam"
+#    output:
+#        ratio = "CF/{pref}/{pref}_markdup.bam_ratio.txt",
+#        CNVs =  "CF/{pref}/{pref}_markdup.bam_CNVs",
+#        number = "CF/{pref}/number_of_cnvs_in_{pref}",
+#        cpn = "CF/{pref}/{pref}_markdup.bam_sample.cpn"
+#    resources: time_min = 50000, mem_mb=128000, cpus = 32
+#    shell:"""
+#        mkdir -p CF/{wildcards.pref}
+#        if [ `samtools view -F 4 -c {input.BAM}`  -gt 999999 ] && [ `samtools view -F 4 -c {input.BAM}`  -lt 10000000 ]; then
+#            sed "s#CFdir#{wildcards.pref}#g" CF_config_0.01.txt > CF/config_{wildcards.pref}.txt
+#            freec -conf CF/config_{wildcards.pref}.txt -sample {input.BAM} || true
+#            wc -l CF/{wildcards.pref}/{wildcards.pref}_markdup.bam_CNVs > {output.number} || true
+#            touch CF/{wildcards.pref}/{wildcards.pref}_markdup.bam_ratio.txt
+#            touch CF/{wildcards.pref}/{wildcards.pref}_markdup.bam_CNVs
+#            touch CF/{wildcards.pref}/{wildcards.pref}_markdup.bam_sample.cpn
+#        elif [ `samtools view -F 4 -c {input.BAM}`  -gt 9999999 ]; then
+#            sed "s#CFdir#{wildcards.pref}#g" CF_config_0.02.txt > CF/config_{wildcards.pref}.txt
+#            freec -conf CF/config_{wildcards.pref}.txt -sample {input.BAM} || true
+#            wc -l CF/{wildcards.pref}/{wildcards.pref}_markdup.bam_CNVs > {output.number} || true
+#            touch CF/{wildcards.pref}/{wildcards.pref}_markdup.bam_ratio.txt
+#            touch CF/{wildcards.pref}/{wildcards.pref}_markdup.bam_CNVs
+#            touch CF/{wildcards.pref}/{wildcards.pref}_markdup.bam_sample.cpn
+#        else
+#            echo File {wildcards.pref}_markdup.bam has too few reads!
+#            touch {output.number}
+#            touch CF/{wildcards.pref}/{wildcards.pref}_markdup.bam_ratio.txt
+#            touch CF/{wildcards.pref}/{wildcards.pref}_markdup.bam_CNVs
+#            touch CF/{wildcards.pref}/{wildcards.pref}_markdup.bam_sample.cpn
+#        fi
+#        """
+
+
+
 rule CONTROL_FREEC_stat:
     input:
         ratio = "CF/{pat}/{pat}_DNA_markdup.bam_ratio.txt",
