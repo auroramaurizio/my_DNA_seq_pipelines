@@ -19,6 +19,7 @@ breakPointType = 4
 #noisyData = TRUE #set TRUE for target resequencing data (e.g., exome-seq) to avoid false positive predictions due to non-uniform capture
 #contamination = 0.25 #a priori known value of tumor sample contamination by normal cells
 ContaminationAdjustement=TRUE #set TRUE to correct for contamination by normal cells. If "contamination" is not provided, it will automatically evaluate the level of contamination
+sex = XY
 
 [sample]
 
