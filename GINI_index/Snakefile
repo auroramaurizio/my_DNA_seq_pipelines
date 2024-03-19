@@ -1,0 +1,155 @@
+import sys
+import logging
+from snakemake.io import glob_wildcards, expand
+import glob,os
+import pathlib
+import csv
+import pandas as pd
+import numpy as np
+
+
+#run with snakemake --profile slurm --use-conda
+
+
+#import multiqc
+
+DATADIR_SHORT="/beegfs/scratch/ric.cosr/ric.cosr/ALL_BAM_sorted_markdup/start/"
+
+files = []
+
+for file_name in os.listdir(DATADIR_SHORT):
+    if file_name.endswith("_markdup.bam"):
+        files.append(file_name)
+
+SUFF = []
+SAMPLELIST = []
+for file in files:
+    A = file.split("_")[0]
+    B = file.split("_")[1]
+    E = A + '_' + B
+    SUFF.append(E)
+
+SUFF=set(SUFF)
+
+SUFFIX = ' '.join(map(str, SUFF))
+print("SUFFIX", SUFFIX)
+
+path = "logs_slurm"
+try:
+    os.mkdir(path)
+except OSError:
+    print ("Creation of the directory %s failed" % path)
+else:
+    print ("Successfully created the directory %s " % path)
+
+
+
+rule all:
+    input:
+        expand(["bed/{pref}_cell_gini.txt"], pref=SUFFIX.split(' '))
+
+
+rule bTb:
+    input:
+        BAM = "/beegfs/scratch/ric.cosr/ric.cosr/ALL_BAM_sorted_markdup/start/{pref}_markdup.bam",
+    output:
+        "bed/{pref}_markdup.bed"
+    resources: time_min = 5000, mem_mb=2500, cpus = 1
+    shell:"""
+        mkdir -p bed
+        bamToBed -i {input.BAM} > {output}
+        """
+
+rule sortbed:
+    input:
+        bed = "bed/{pref}_markdup.bed",
+    output:
+        "bed/{pref}_markdup_sorted.bed"
+    resources: time_min = 10000, mem_mb=50000, cpus = 2
+    shell:"""
+        sortBed -i {input.bed} > {output}
+        """
+
+rule intersect:
+    input:
+        genome = "/beegfs/scratch/ric.cosr/ric.cosr/Hg38_cleaned_1M.sorted.bed",
+        bed = "bed/{pref}_markdup_sorted.bed"
+    output:
+        "bed/intersected_{pref}_markdup_sorted.bed"
+    resources: time_min = 10000, mem_mb=25000, cpus = 2
+    shell:"""
+        bedtools map -a {input.genome} -b {input.bed} > {output}
+        """
+
+
+rule replacedot:
+    input:
+        "bed/intersected_{pref}_markdup_sorted.bed"
+    output:
+        "bed/intersected_{pref}_markdup_sorted_zero.bed"
+    resources: time_min = 10000, mem_mb=2500, cpus = 1
+    shell:"""
+        sed 's/\./0/g' {input} > {output}
+        """
+
+
+rule gini:
+    input:
+        "bed/intersected_{pref}_markdup_sorted_zero.bed",
+    output:
+        "bed/{pref}_gini.txt"
+    resources: time_min = 50000, mem_mb=25000, cpus = 2
+    run :
+        def gini_coefficient(x):
+            """Compute Gini coefficient of array of values"""
+            diffsum = 0
+            for i, xi in enumerate(x[:-1], 1):
+                diffsum += np.sum(np.abs(xi - x[i:]))
+            return diffsum / (len(x)**2 * np.mean(x))
+
+        # Read the data from the file and extract the numerical values
+        values = []
+        with open(input[0], 'r') as file:
+            for line in file:
+                parts = line.strip().split('\t')
+                if len(parts) >= 4:
+                    value = int(parts[3])  # Assuming the fourth column contains numerical values
+                values.append(value)
+
+        # Compute the Gini coefficient
+        gini = gini_coefficient(np.array(values))
+        output_file_path = "gini_coefficient.txt"
+        with open(output[0], 'w') as output_file:
+            output_file.write("Gini: " + str(gini) + "\n")
+
+
+
+rule gini_label:
+    input:
+        "bed/intersected_{pref}_markdup_sorted_zero.bed",
+    output:
+        "bed/{pref}_cell_gini.txt"
+    resources: time_min = 50000, mem_mb=25000, cpus = 2
+    run :
+        def gini_coefficient(x):
+            """Compute Gini coefficient of array of values"""
+            diffsum = 0
+            for i, xi in enumerate(x[:-1], 1):
+                diffsum += np.sum(np.abs(xi - x[i:]))
+            return diffsum / (len(x)**2 * np.mean(x))
+
+        # Read the data from the file and extract the numerical values
+        values = []
+        with open(input[0], 'r') as file:
+            for line in file:
+                parts = line.strip().split('\t')
+                if len(parts) >= 4:
+                    value = int(parts[3])  # Assuming the fourth column contains numerical values
+                values.append(value)
+
+        # Compute the Gini coefficient
+        gini = gini_coefficient(np.array(values))
+        output_file_path = "gini_coefficient.txt"
+        with open(output[0], 'w') as output_file:
+            output_file.write(wildcards.pref + "\t" + str(gini) + "\n")
+
