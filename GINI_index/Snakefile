@@ -46,7 +46,8 @@ else:
 
 rule all:
     input:
-        expand(["bed/{pref}_cell_gini.txt"], pref=SUFFIX.split(' '))
+        expand(["bed/{pref}_cell_gini.txt"], pref=SUFFIX.split(' ')),
+        expand(["coverage/{pref}_coverage.txt"], pref=SUFFIX.split(' '))
 
 
 rule bTb:
@@ -152,4 +153,17 @@ rule gini_label:
         output_file_path = "gini_coefficient.txt"
         with open(output[0], 'w') as output_file:
             output_file.write(wildcards.pref + "\t" + str(gini) + "\n")
+
+
+rule coverage:
+    input:
+        BAM = "/beegfs/scratch/ric.cosr/ric.cosr/Menarini/ALL_BAM_sorted_markdup/start/{pref}_markdup.bam",
+    output:
+        "coverage/{pref}_coverage.txt"
+    resources: time_min = 5000, mem_mb=2500, cpus = 1
+    shell:"""
+        mkdir -p bed
+        count=$(samtools view -F 4 -c {input.BAM})
+        echo -e "{wildcards.pref}\t$count" > {output}
+        """
 
