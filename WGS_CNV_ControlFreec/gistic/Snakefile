@@ -1,0 +1,101 @@
+import sys
+import logging
+from snakemake.io import glob_wildcards, expand
+import glob,os
+import pathlib
+import csv
+import pandas as pd
+import numpy as np
+
+
+path = "logs_slurm"
+try:
+    os.mkdir(path)
+except OSError:
+    print ("Creation of the directory %s failed" % path)
+else:
+    print ("Successfully created the directory %s " % path)
+
+
+
+
+DATADIR="/beegfs/scratch/ric.cosr/ric.cosr/Carniti_DNA/CF"
+
+#PTCL_0073_DNA
+
+SAMPLELIST = set(["PTCL_0001_DNA", "PTCL_0006_DNA", "PTCL_0009_DNA", "PTCL_0010_DNA", "PTCL_0014_DNA", "PTCL_0015_DNA",
+                 "PTCL_0017_DNA", "PTCL_0018_DNA", "PTCL_0020_DNA", "PTCL_0021_DNA", "PTCL_0022_DNA",
+                 "PTCL_0023_DNA", "PTCL_0025_DNA", "PTCL_0026_DNA", "PTCL_0027_DNA", "PTCL_0028_DNA",
+                 "PTCL_0029_DNA", "PTCL_0031_DNA", "PTCL_0032_DNA", "PTCL_0033_DNA", "PTCL_0034_DNA", "PTCL_0036_DNA",
+                 "PTCL_0037_DNA", "PTCL_0038_DNA", "PTCL_0040_DNA", "PTCL_0041_DNA", "PTCL_0041_DNA", "PTCL_0042_DNA", "PTCL_0043_DNA",
+                 "PTCL_0044_DNA", "PTCL_0046_DNA", "PTCL_0047_DNA", "PTCL_0048_DNA", "PTCL_0050_DNA", "PTCL_0051_DNA",
+                 "PTCL_0052_DNA", "PTCL_0053_DNA", "PTCL_0054_DNA", "PTCL_0055_DNA", "PTCL_0056_DNA", "PTCL_0057_DNA",
+                 "PTCL_0058_DNA", "PTCL_0059_DNA", "PTCL_0060_DNA", "PTCL_0061_DNA", "PTCL_0062_DNA", "PTCL_0063_DNA",
+                 "PTCL_0066_DNA", "PTCL_0067_DNA", "PTCL_0068_DNA", "PTCL_0069_DNA", "PTCL_0072_DNA",
+                 "PTCL_0074_DNA", "PTCL_0076_DNA", "PTCL_0077_DNA", "PTCL_0078_DNA", "PTCL_0079_DNA",
+                 "PTCL_0080_DNA", "PTCL_0081_DNA", "PTCL_0083_DNA", "PTCL_0084_DNA", "PTCL_0085_DNA", "PTCL_0086_DNA",
+                 "PTCL_0087_DNA", "PTCL_0089_DNA", "PTCL_0090_DNA", "PTCL_0092_DNA", "PTCL_0093_DNA", "PTCL_0094_DNA",
+                 "PTCL_0095_DNA", "PTCL_0097_DNA", "PTCL_0099_DNA", "PTCL_0100_DNA", "PTCL_0101_DNA", "PTCL_0103_DNA", "PTCL_0104_DNA",
+                 "PTCL_0106_DNA"])
+
+
+
+
+SUFFIX = ' '.join(map(str, SAMPLELIST))
+print("SUFFIX", SUFFIX)
+
+
+rule all:
+    input:
+       expand(['CF/{pref}/{pref}_calls.txt'], pref=SUFFIX.split(' ')),
+       expand(["CF/bed/{pref}_freec_segments.bed"], pref=SUFFIX.split(' ')),
+       expand(["CF/cpn/{pref}_markdup.bam_sample.cpn"], pref=SUFFIX.split(' '))
+
+
+rule kp_info:
+    input:
+        PV_filtered = "CF/{pref}/{pref}_markdup.bam_CNVs.p.value.filtered.txt",
+        ratio = "CF/{pref}/{pref}_markdup.bam_ratio.txt"
+    output:
+        "CF/{pref}/{pref}_calls.txt"
+    resources: time_min = 50000, mem_mb=12800, cpus = 16
+    shell:"""
+        bash -c '
+        . $HOME/.bashrc
+        conda activate PLOT
+        if [ `cat {input.PV_filtered} | wc -l` -gt 1 ] ; then
+            cat /beegfs/scratch/ric.cosr/ric.cosr/Menarini/plot_flat_ratio_agg.R | R --slave --args {input.ratio} {input.PV_filtered} {output} {wildcards.pref}
+            rm "CF/{wildcards.pref}/number_of_cnvs_in_{wildcards.pref}"
+        else
+            touch {output}
+            #rm "CF/{wildcards.pref}/number_of_cnvs_in_{wildcards.pref}"
+            #touch "CF/{wildcards.pref}/number_of_filtered_cnvs_in_{wildcards.pref}"
+        fi
+        conda deactivate'
+        """
+
+
+
+rule bed:
+    input:
+        ratio = "CF/{pref}/{pref}_markdup.bam_ratio.txt"
+    output:
+        "CF/bed/{pref}_freec_segments.bed"
+    resources: time_min = 50000, mem_mb=12800, cpus = 16
+    shell:"""
+        mkdir -p "CF/bed"
+        freec2bed.pl -f {input.ratio} > {output}
+        """
+
+rule cp_files:
+    input:
+        cpn = "CF/{pref}/{pref}_markdup.bam_sample.cpn"
+    output:
+        "CF/cpn/{pref}_markdup.bam_sample.cpn"
+    resources: time_min = 50000, mem_mb=12800, cpus = 16
+    shell:"""
+        mkdir -p "CF/cpn"
+        cp {input.cpn} {output}
+        """
+
+
