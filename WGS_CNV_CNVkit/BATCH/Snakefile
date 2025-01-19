@@ -145,4 +145,11 @@ rule cnvkit_heatmap_region:
     shell:
         "cnvkit.py heatmap {input} -c chr7 -o {output}"
 
-
+rule summary_input_for_gistic:
+    input:
+        expand(["{base}.CNVKIT/{base}_DNA_markdup_only_marked_mclonal.call.cns"], base=PATIENT.split(' '))
+    output:
+        "Samples.seg"
+    resources: time_min = 50000, mem_mb=12800, cpus = 16
+    shell:
+        "cnvkit.py export seg {input} -o {output}"
